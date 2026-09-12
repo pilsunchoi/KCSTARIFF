@@ -1,5 +1,9 @@
 # KCSTARIFF — 한국 HSK 10단위 관세율 DB (2007~2026)
 
+[![Release](https://img.shields.io/github/v/release/pilsunchoi/KCSTARIFF?label=DB%20%EB%82%B4%EB%A0%A4%EB%B0%9B%EA%B8%B0&color=1f6feb)](https://github.com/pilsunchoi/KCSTARIFF/releases/latest)
+[![License: MIT](https://img.shields.io/badge/code-MIT-green.svg)](LICENSE)
+[![Dashboard](https://img.shields.io/badge/%EB%8C%80%EC%8B%9C%EB%B3%B4%EB%93%9C-pilsunchoi.github.io%2FKCSTARIFF-1f6feb)](https://pilsunchoi.github.io/KCSTARIFF/)
+
 관세법령정보포털(CLIP)이 화면으로만 보여 주는 연도별 HSK 10단위 세율을 스무 해 전부 받아 DuckDB 한 파일로 만든 것이다. 기본세율·WTO 협정세율·탄력세율(조정·할당·특별긴급·덤핑방지)·농림축산물 양허세율과 FTA 일곱 상대(중국·EU·미국·아세안·인도·베트남·캐나다)의 협정세율이 코드×연도×세율 구분으로 들어 있고, 연중에 바뀐 세율은 적용 기간으로 나뉘어 있다. 여기에 관세법 제50조의 우선순위와 FTA 관세특례법 제5조를 조문대로 옮겨 코드×연도마다 실제로 적용되는 한 값(실행세율)을 원산지별로 계산한 파생표를 더했다.
 
 무역통계 DB [KCSDB2](https://pilsunchoi.github.io/KCSDB2/)와 연도·HS10으로 바로 조인된다.
@@ -32,7 +36,7 @@
 
 ## 받기와 사용
 
-DB 파일(약 37MB)은 Releases에서 받는다. 저장소에는 없다.
+DB 파일(약 38MB)은 [Releases](https://github.com/pilsunchoi/KCSTARIFF/releases)에서 받는다(현재 `v1.0-2026`, 2026-09-13 게시). 저장소에는 없다.
 
 ```python
 import duckdb
