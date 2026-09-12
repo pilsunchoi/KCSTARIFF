@@ -1,0 +1,20 @@
+# 원본 캐시와 DB는 올리지 않는다(릴리스 자산으로 배포)
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+outputs/
+logs/*
+!logs/.gitkeep
+config/*.env
+
+# 작업 규약·개인 도구
+CLAUDE.md
+*.duckdb
+*.duckdb.wal
+*.duckdb.gz
+__pycache__/
+.ipynb_checkpoints/
+
+# 연구 작업 폴더(로컬 전용). 공개할 산출물만 docs/로 옮긴다
+research/
