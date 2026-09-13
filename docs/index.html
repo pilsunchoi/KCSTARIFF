@@ -705,7 +705,7 @@ python scripts/02_build_applied_rate.py --load   # 실행세율 파생표를 만
     <div class="mono">
       <h2 class="h">연구</h2>
       <p class="sub lead">이 DB 위에서 수행하는 분석과 자료 문서를 모은다. 각 항목은 렌더된 문서(Markdown·표·그림)와 그 결과를 재현하는 노트북으로 연결된다.</p>
-      <div class="note">여기 실릴 것은 이 DB로 무엇을 할 수 있는지 보이는 사례다. 방법의 예시이지 이 DB가 특정 분석을 전제한다는 뜻은 아니다. 첫 항목은 이 DB를 만든 과정과 다시 만드는 절차를 적은 자료 논문이며, 분석 챕터는 뒤에 더한다.</div>
+      <div class="note">여기 실릴 것은 이 DB로 무엇을 할 수 있는지 보이는 사례다. 방법의 예시이지 이 DB가 특정 분석을 전제한다는 뜻은 아니다. 첫 항목은 이 DB를 만든 과정과 다시 만드는 절차를 적은 자료 논문이고, 둘째 항목은 이 DB의 종량 하한으로 가격 과소신고를 검정한 첫 분석 논문이다. 분석 챕터는 뒤에 더한다.</div>
 
       <article class="mono-card">
         <div class="mono-num">I</div>
@@ -725,6 +725,27 @@ python scripts/02_build_applied_rate.py --load   # 실행세율 파생표를 만
             <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/scripts/01_fetch_tariff.py" target="_blank" rel="noopener">수집 스크립트 (01)</a>
             <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/scripts/02_build_applied_rate.py" target="_blank" rel="noopener">실행세율 스크립트 (02)</a>
             <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/docs/실행세율_법령근거.md" target="_blank" rel="noopener">법령 근거</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="mono-card">
+        <div class="mono-num">II</div>
+        <div class="mono-body">
+          <p class="mono-chlabel">분석 논문 · 종량 하한과 가격 과소신고</p>
+          <h3 class="mono-chtitle">종량 하한과 가격 과소신고: 한국 농산물 선택 세율의 증거</h3>
+          <p class="mono-chsub">과소신고의 유인은 세율의 수준이 아니라 형태에서 온다 — 하한 검정, 건조생강 사건연구, 집행 지정의 이질성, 미러 갭 회귀</p>
+          <p class="mono-desc">「270% 또는 kg당 6,210원 중 고액」 같은 선택 세율에서는 종량세를 종가세율로 나눈 값 아래로 신고 가격을 낮춰도 세액이 더 줄지 않으므로, 그 값이 신고 가격의 하한이 되고 하한이 실제 단가에 비해 낮은 코드일수록 과소신고로 줄일 수 있는 세액이 크다. 이 DB의 실행세율과 종량 하한, 관세청 사전세액심사·유통이력 지정 목록, 원산지×월×HS10 통관 실적(KCSDB2), 상대국 28개국의 미러 통계로 세 가지를 묻는다. 하한이 있는 코드에서 과소신고가 일어나는가, 하한이 사실상 없는 코드에서 과소신고는 어디까지 내려가고 무엇이 멈추는가, 집행 지정은 과소신고를 바꾸는가.</p>
+          <ul class="mono-bullets">
+            <li>종량 하한이 있는 코드 31개에서 하한 아래 신고는 수입액의 0.1%, 건고추·참깨·대두는 0이고 건고추 단가는 냉동고추 단가의 5배와 맞는다. 하한이 사실상 없는 건조생강은 중국산 단가가 2012년 kg당 1.94달러에서 2020~2021년 0.46달러(신선생강 단가의 10배 대비 3~4%)까지 내려갔고 중국 보고 단가와의 갭이 로그 2.4에 이르렀다.</li>
+            <li>그 과소신고를 멈춘 것은 사전세액심사 지정(2022년 3월)이 아니라 넉 달 앞선 언론 보도와 국정감사(2021년 11월)였다. 사전세액심사 코드 31개의 평균 효과는 0이지만 지정 전 과소신고가 있던 셋에서만 사후 단가가 로그 1.21 올랐다 — 집행은 문서상의 지정이 아니라 수입자가 감시를 인지한 시점에 작동한다.</li>
+            <li>함의는 세율 설계(하한이 단가에 비해 낮아진 코드의 종량세 갱신)와 집행의 배분(심사 자원은 세율이 높은 코드가 아니라 하한/단가 비율이 낮은 코드에). 인용 수치 389건은 분석 노트북의 마지막 셀이 등록값과 대조한다.</li>
+          </ul>
+          <div class="mono-links">
+            <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/docs/연구/논문A_종량하한과_과소신고.md" target="_blank" rel="noopener">문서 읽기</a>
+            <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/docs/연구/논문A_분석.ipynb" target="_blank" rel="noopener">분석 노트북 (실행 결과)</a>
+            <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/docs/연구/논문A_파이썬_코드.ipynb" target="_blank" rel="noopener">파이썬 코드 전부</a>
+            <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/docs/연구/논문C_실행세율_자료구축.md" target="_blank" rel="noopener">자료 논문 (I)</a>
           </div>
         </div>
       </article>
