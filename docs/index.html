@@ -705,23 +705,25 @@ python scripts/02_build_applied_rate.py --load   # 실행세율 파생표를 만
     <div class="mono">
       <h2 class="h">연구</h2>
       <p class="sub lead">이 DB 위에서 수행하는 분석과 자료 문서를 모은다. 각 항목은 렌더된 문서(Markdown·표·그림)와 그 결과를 재현하는 노트북으로 연결된다.</p>
-      <div class="note">여기 실릴 것은 이 DB로 무엇을 할 수 있는지 보이는 사례다. 방법의 예시이지 이 DB가 특정 분석을 전제한다는 뜻은 아니다. 분석 챕터는 아직 없다 — 첫 항목은 이 DB와 그 위의 연구가 쓴 자료의 수집 절차 문서이며, 자료 논문과 함께 공개할 때 링크를 연다.</div>
+      <div class="note">여기 실릴 것은 이 DB로 무엇을 할 수 있는지 보이는 사례다. 방법의 예시이지 이 DB가 특정 분석을 전제한다는 뜻은 아니다. 첫 항목은 이 DB를 만든 과정과 다시 만드는 절차를 적은 자료 논문이며, 분석 챕터는 뒤에 더한다.</div>
 
-      <article class="mono-card placeholder">
+      <article class="mono-card">
         <div class="mono-num">I</div>
         <div class="mono-body">
-          <p class="mono-chlabel">자료 문서 · 공개 준비 중</p>
-          <h3 class="mono-chtitle">관세율·법령·집행 자료의 수집 절차</h3>
-          <p class="mono-chsub">어디서 무엇을 어떻게 받았는가 — 포털 화면 넷, 법령센터 별표 셋, 미러 통계와 환율</p>
-          <p class="mono-desc">자료 열둘의 출처 주소·요청 변수·파일 형식·파싱 방법·확인된 함정을 다시 할 수 있을 만큼 적었다. 관세법령정보포털의 관세율표·주요세율보기·품목 상세 화면과 사전세액심사 대상물품 조회, 국가법령정보센터의 양허관세 규정 별표 1(ZIP 안 XLSX)·품목분류 적용기준 규칙 별표(PDF)·유통이력관리 고시 별표 1(관세청·농식품부·해수부 판본 48개, HWP 5.0·HWPX·PDF), UN Comtrade 공개 미리보기 API, 한국은행 ECOS 환율, 공공데이터포털 관세율표까지다.</p>
+          <p class="mono-chlabel">자료 논문 · 기록 문서</p>
+          <h3 class="mono-chtitle">한국 HSK 10단위 연도별 실행세율 자료의 구축</h3>
+          <p class="mono-chsub">관세법령정보포털 화면에서 원산지별 실행세율까지(2007~2026) — 본문 여덟 장과 재현 절차 부록</p>
+          <p class="mono-desc">이 DB가 무엇이고 어떻게 만들었으며 어떻게 검증했는지를 학술논문의 형식을 빌려 적은 기록 문서다. 서론에서 기본세율·탄력세율·양허세율·협정세율·선택 세율·종량 하한·실행세율 같은 용어를 관세법 조문 번호와 영어 병기로 정의하고, 포털 세 화면의 수집과 함정(II장), 표 여섯의 구성(III장), 관세법 제50조의 우선순위를 코드×연도에 적용한 실행세율 규칙(IV장), 함께 만든 보조 자료 아홉 가지(V장), 검증 다섯 겹(VI장), 한계와 이용 조건(VII장)을 적었다. 부록 A는 자료 열넷마다 주소·요청 변수·파일 형식·읽는 법·확인된 함정과 다시 하는 순서를 적은 재현 절차이고, 쓰인 파이썬 프로그램 전부는 노트북 하나에 모았다.</p>
           <ul class="mono-bullets">
-            <li>관세율표 화면의 탄력·양허 칸은 표에 비어 있고 스크립트 <code>f_KorAdTax</code>가 행 번호로 채운다 — 표와 스크립트를 행 번호로 잇는 절차.</li>
-            <li>법령센터 별표는 iframe·PDF 뷰어 안에 있어 단순 요청으로는 못 읽는다 — 판본 페이지에서 <code>flDownload</code> 링크를 찾는 공통 절차와, HWP 5.0(OLE·zlib·PARA_TEXT)과 HWPX(ZIP·<code>hp:t</code>)를 읽는 검증된 스니펫.</li>
-            <li>사전세액심사 목록은 브라우저 밖 요청에 빈 응답을 주므로 페이지 컨텍스트 <code>fetch</code>로 받는다. Comtrade 공개 API는 호출당 500행·연속 100회 뒤 429다.</li>
+            <li>관세율표 화면의 탄력·양허 칸은 표에 비어 있고 스크립트 <code>f_KorAdTax</code>가 행 번호로 채운다 — 표와 스크립트를 행 번호로 잇는다. 2011년 제90류는 서버가 표를 절반만 주고 상태 코드 200을 돌려줘 코드 394개가 조용히 빠졌고, 수입액 커버리지 검사로만 드러났다.</li>
+            <li>「270% 또는 kg당 6,210원」 같은 선택 세율은 양허관세 규정 별표 1이 「양자 중 고액」으로 정하므로 종량세를 종가세율로 나눈 값이 신고 가격의 하한이 된다 — 코드 92개, kg당 88원에서 3만 4천 원.</li>
+            <li>검증 다섯 겹: 두 화면 대조(기본세율 99.80%·WTO 99.97% 일치), 알려진 값 여덟, 품목 상세 화면과 22,164행 대조, 무역통계 커버리지 99.92~100%, 그리고 2025년 표본 214개를 관세법 별표 관세율표(HWP)·양허관세 규정 별표·조정관세 규정 별표에서 직접 읽어 전부 일치.</li>
           </ul>
           <div class="mono-links">
-            <a class="disabled" href="#">문서 읽기 (준비 중)</a>
+            <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/docs/연구/논문C_실행세율_자료구축.md" target="_blank" rel="noopener">문서 읽기</a>
+            <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/docs/연구/논문C_프로그램.ipynb" target="_blank" rel="noopener">프로그램 노트북</a>
             <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/scripts/01_fetch_tariff.py" target="_blank" rel="noopener">수집 스크립트 (01)</a>
+            <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/scripts/02_build_applied_rate.py" target="_blank" rel="noopener">실행세율 스크립트 (02)</a>
             <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/docs/실행세율_법령근거.md" target="_blank" rel="noopener">법령 근거</a>
           </div>
         </div>
