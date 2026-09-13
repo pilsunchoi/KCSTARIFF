@@ -29,7 +29,11 @@
     tariff_code   year, hs10, name_ko, source              그해 관세율표의 10단위 코드
     tariff_rate   year, hs10, rate_cd, rate_txt, adval, specific, valid_from, valid_to, source
                   source는 table(관세율표) · main(주요세율보기의 FTA 열) · fill(관세율표 화면을
-                  받지 못한 코드를 주요세율보기의 기본·WTO·아시아태평양 세율로 채운 것)
+                  받지 못한 코드를 주요세율보기의 기본·WTO·아시아태평양 세율로 채운 것) ·
+                  annex(포털 두 화면 모두 빠뜨린 세율을 법령 별표에서 채운 것 — data/fill/*.csv)
+  data/fill/*.csv    포털에 없는 세율의 채움표(year, hs10, rate_cd, rate_txt, adval, method, note). 2017~2019년 정보기술협정
+                     품목 822개의 WTO 협정세율(C)이 두 화면 모두에 없어 양허관세 규정 별표 1의 다(2019.10.1 판)에서 채웠다.
+                     그해 세율표에 있는 코드에 그 구분의 세율이 없을 때만 넣는다.
     dim_rate_cd   rate_cd, rate_nm, source
     meta_fetch    page, year, ryu, fetched_at, bytes
 
@@ -70,6 +74,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 # 원본 캐시는 크다(관세율표 700MB·주요세율 450MB). 이미 받은 캐시가 다른 곳에 있으면 KCSTARIFF_RAW로 가리킨다.
 RAW = Path(os.environ.get("KCSTARIFF_RAW", PROJECT_ROOT / "data" / "raw"))
 DB_OUT = PROJECT_ROOT / "data" / "processed" / "kcstariff.duckdb"
+FILL_DIR = PROJECT_ROOT / "data" / "fill"          # 포털에 없는 세율의 채움표(법령 별표에서 읽은 것)
 # 수입액 커버리지 검증은 KCSDB2(무역통계 DB)가 있을 때만 한다. 없으면 건너뛴다.
 DB_TRADE = Path(os.environ.get("KCSDB2_PATH", PROJECT_ROOT.parent / "KCSDB2" / "data" / "processed" / "kcsdb.duckdb"))
 LOG_DIR = PROJECT_ROOT / "logs"
@@ -290,10 +295,56 @@ def build(years, ryus):
     return code, rt, names
 
 
+def apply_fill(code: pd.DataFrame, rt: pd.DataFrame) -> pd.DataFrame:
+    """data/fill/*.csv 의 채움표를 tariff_rate 행(source='annex')으로 더한다.
+
+    포털 두 화면 모두에 없는 세율을 법령 별표에서 읽어 둔 표다. 그해 관세율표에 있는 코드에 그 구분의 세율이
+    없을 때만 넣는다(있으면 포털 값을 둔다). 기간은 그해 1월 1일~12월 31일이다.
+    """
+    files = sorted(FILL_DIR.glob("*.csv"))
+    if not files:
+        return rt
+    fl = pd.concat([pd.read_csv(f, dtype={"hs10": str}) for f in files], ignore_index=True)
+    fl = fl[fl.year.isin(code.year.unique())]
+    if fl.empty:
+        return rt
+    have_code = set(zip(code.year, code.hs10))
+    have_rate = set(zip(rt.year, rt.hs10, rt.rate_cd))
+    keep = [((y, h) in have_code) and ((y, h, cd) not in have_rate) for y, h, cd in zip(fl.year, fl.hs10, fl.rate_cd)]
+    fl = fl[keep]
+    logger.info("  채움표 적용: %d행 (연도별 %s), 코드 없음·이미 있음으로 뺀 %d행",
+                len(fl), fl.groupby("year").size().to_dict(), int(len(keep) - sum(keep)))
+    add = pd.DataFrame({
+        "year": fl.year.astype(int), "hs10": fl.hs10, "rate_cd": fl.rate_cd, "rate_txt": fl.rate_txt,
+        "rate_nm": None, "period": None, "source": "annex",
+        "valid_from": [date(int(y), 1, 1) for y in fl.year], "valid_to": [date(int(y), 12, 31) for y in fl.year],
+        "adval": fl.adval.astype(float), "specific": float("nan"),
+    })
+    return pd.concat([rt, add[rt.columns]], ignore_index=True)
+
+
 def verify(code: pd.DataFrame, rt: pd.DataFrame):
     """두 화면의 대조와 알려진 값 확인, 수입액 커버리지. 로그에 찍는 수치를 outputs/수집_검증.csv(item, key, value)에도 남긴다."""
     rows = []   # (item, key, value) — 논문·노트북이 대조할 수 있게 파일로 남긴다
     tb, mn = rt[rt.source == "table"], rt[rt.source == "main"]
+
+    # 중간 해에만 빠진 세율: 그 코드의 C가 더 이른 해와 더 늦은 해에는 있는데 그해에 없는 코드 수. 2017~2019년 ITA 품목의
+    # C가 두 화면 모두에서 빠진 것을 두 화면 대조로는 못 잡았으므로(둘 다 없어 일치), 연도 사이의 연속성으로 본다.
+    # 채움(annex) 전후를 함께 남긴다 — 채움 뒤에는 0이어야 한다.
+    for label, sub in [("채움 전", rt[rt.source != "annex"]), ("채움 후", rt)]:
+        cs = sub[(sub.rate_cd == "C") & sub.adval.notna()][["year", "hs10"]].drop_duplicates()
+        have = set(zip(cs.year, cs.hs10))
+        span = cs.groupby("hs10").year.agg(["min", "max"])
+        gaps = {}
+        for y in sorted(code.year.unique()):
+            hs = code[code.year == y].hs10
+            hs = hs[hs.isin(span.index)]
+            n = int(sum(1 for h in hs if (y, h) not in have and span.at[h, "min"] < y < span.at[h, "max"]))
+            rows.append((f"WTO C 중간 해 결측({label})", y, n))
+            if n:
+                gaps[y] = n
+        logger.info("  WTO C 중간 해 결측(%s): %s", label, gaps or "없음")
+    rows.append(("채움표(annex) 행", "전체", int((rt.source == "annex").sum())))
     for y in sorted(code.year.unique()):
         ct = set(code[(code.year == y) & (code.source == "table")].hs10)
         cm = set(mn[mn.year == y].hs10)
@@ -315,7 +366,7 @@ def verify(code: pd.DataFrame, rt: pd.DataFrame):
             rows += [(f"두 화면 일치율 {cd}", "전체", round(100 * ok.mean(), 2)), (f"두 화면 대조 쌍 {cd}", "전체", len(m))]
             if ok.mean() < 0.99:
                 logger.warning("  어긋나는 예: %s", m[~ok].head(5).to_dict("records"))
-    rt = rt[rt.source.isin(["table", "fill"]) | rt.rate_cd.str.startswith("F")]   # 적재 대상만 남긴다
+    rt = rt[rt.source.isin(["table", "fill", "annex"]) | rt.rate_cd.str.startswith("F")]   # 적재 대상만 남긴다
 
     unread = rt[rt.adval.isna() & rt.specific.isna()]
     logger.info("  숫자로 못 읽은 세율 %d행 (%.3f%%) 예: %s", len(unread), 100 * len(unread) / max(len(rt), 1),
@@ -424,12 +475,13 @@ def main():
     meta = collect(args.years, args.ryu, args.pages, args.delay, args.parse_only)
     code, rt, names = build(args.years, args.ryu)
     logger.info("파싱: 코드 %d, 세율 %d행", len(code), len(rt))
+    rt = apply_fill(code, rt)
     verify(code, rt)
     if args.verify_only:
         logger.info("검증만 하고 적재는 하지 않는다"); return
     # 주요세율보기의 기본·WTO·아시아태평양 열은 관세율표와 겹치므로 대조에만 쓰고 FTA 열만 싣는다.
     # 관세율표 화면을 받지 못해 채운 코드(fill)는 예외다.
-    rt = rt[rt.source.isin(["table", "fill"]) | rt.rate_cd.str.startswith("F")]
+    rt = rt[rt.source.isin(["table", "fill", "annex"]) | rt.rate_cd.str.startswith("F")]
     load(code, rt, names, meta)
     logger.info("완료: %s", DB_OUT)
 

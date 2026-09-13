@@ -15,13 +15,15 @@
 | 표 | 행 | 내용 |
 |---|---|---|
 | `tariff_code` | 238,015 | 연도×HS10 코드와 품명(잎 품명). 연도당 11,293~12,243개 |
-| `tariff_rate` | 2,021,597 | 연도×HS10×세율 구분. 화면 문구(`rate_txt`), 종가(`adval`, %), 종량(`specific`, 원), 적용 기간(`valid_from`, `valid_to`), 출처(`source`: table/main/fill) |
+| `tariff_rate` | 2,024,063 | 연도×HS10×세율 구분. 화면 문구(`rate_txt`), 종가(`adval`, %), 종량(`specific`, 원), 적용 기간(`valid_from`, `valid_to`), 출처(`source`: table/main/fill/annex) |
 | `dim_rate_cd` | 24 | 세율 구분 코드와 이름 |
 | `fct_applied_rate` | 237,990 | 연도×HS10 실행세율. 무협정 세율 `mfn`과 그 규정(`mfn_regime`), 1월 1일 값 `mfn_jan`, 일곱 상대의 원산지별 적용세율 `applied_cn/eu/us/asean/in/vn/ca`, 종량 하한 `floor_won_kg`, 조건부 세율 표시 `has_I/T1/T2/P1/W1`, 세율 미확정 표시와 사유 |
 | `dim_origin_regime` | 49 | 원산지(ISO2) → 협정 구분과 적용 연도 |
 | `meta_fetch` | — | 수집 기록 |
 
 세율 구분 24종: 기본 A, WTO C, 개도국 D·G1·G2, 아시아태평양 E1~E3, 국제협력 F, 덤핑방지 I(2016~), 조정 L, 할당 P1·P3, 특별긴급 T1·T2, 농림축산물 양허 W1(추천)·W2(미추천), FTA FCN1·FEU1·FUS1·FAS1·FIN1·FVN1·FCA1.
+
+포털이 두 화면 모두에서 빠뜨린 세율 하나는 법령 별표로 채웠다. 2017~2019년 정보기술협정(ITA) 확대 품목 822개 코드(제85·90·84·37류가 대부분)의 WTO 협정세율 C가 그 세 해의 화면에 없어, 양허관세 규정 별표 1의 다(2019.10.1 시행 판, 연차별 세율 열)에서 읽어 넣었다(`source='annex'`, 2,466행, 채움표는 `data/fill/`). 별표의 2020~2023년 열이 포털 값과 겹치는 코드 전부에서 일치함을 확인했다.
 
 ## 실행세율을 만드는 규칙
 
