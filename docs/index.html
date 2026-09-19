@@ -230,7 +230,7 @@
     <div class="panel">
       <p><b>무엇인가.</b> 한국에 수입되는 물품은 HSK(한국 품목분류) 10자리 코드로 분류되고, 코드마다 그해에 적용되는 관세율이 정해져 있다. 그런데 한 코드에 세율이 하나가 아니다 — 기본세율이 있고, WTO에 약속한 협정세율이 있고, 정부가 해마다 정하는 조정·할당관세가 있고, 상대국이 어디냐에 따라 FTA 협정세율이 있다. 이 DB는 관세법령정보포털(CLIP)이 연도별로 보여 주는 그 세율 전부를 2007년부터 2026년까지 받아 DuckDB 파일 하나(<code>kcstariff.duckdb</code>, 약 38MB)에 담은 것이다. 세율 화면의 문구는 그대로 보존하고(<code>rate_txt</code>), 그것을 숫자로 읽은 종가세율(물품 가격의 몇 %)과 종량세액(kg당 몇 원)을 옆에 두었다.</p>
       <p><b>왜 만들었나.</b> 세율 자료는 "지금 세율"만 구하기는 쉽다 — 관세청이 공공데이터포털에 「품목번호별 관세율표」 엑셀(<code>15051179</code>)을 올려 둔다. 문제는 과거다. 그 엑셀은 현행판과 직전판 하나뿐이라 "2013년에 이 코드의 세율이 얼마였나"를 답하지 못한다. 관세법령정보포털은 연도를 골라 옛 세율표를 보여 주지만 화면으로만 준다. 검색 조건에 류(HS 앞 2자리)를 주면 그 류의 10단위 코드 전부가 표 한 장에 오므로 코드 하나씩 물을 필요는 없지만, 류 97개를 해마다 돌아야 하고, 기본·탄력·양허 세율을 주는 화면과 FTA 세율을 주는 화면이 따로라 류마다 두 번씩 받아야 한다. 스무 해에 3,544번이다. 게다가 앞 화면은 탄력·양허 세율 칸이 처음에는 비어 있다가 화면이 열린 뒤 따로 채워지는 구조라, 화면을 그대로 저장해 표만 읽으면 기본세율밖에 안 보인다(<a href="#" onclick="showTab('traps');return false">데이터 함정</a> 탭). 이 DB는 그 수집과 정리를 끝내 두어, 어느 코드의 세율이 어느 해에 얼마였고 어떻게 바뀌었는지를 바로 구할 수 있게 한다.</p>
-      <p><b>왜 "실행세율"이 따로 있나.</b> 세율이 여럿이면 어느 것이 실제로 적용되는지를 정해야 한다. 관세법 제50조가 그 우선순위를 정하고, FTA 관세특례법 제5조가 협정세율과의 관계를 정한다. 건고추(<code>0904210000</code>)는 2025년에 기본세율 50%, 양허관세 270% 또는 kg당 6,210원, 한-미 FTA 18%가 함께 있는데, 조문을 따르면 적용 세율이 원산지에 따라 갈려서, 가령 협정이 없는 나라에서 온 수입에는 270%가, 미국산에는 18%가 적용된다. 이 DB는 그 판정을 코드×연도마다 해 두었다(<code>fct_applied_rate</code>, 237,990행). 어떤 규칙으로 정했는지는 <a href="#" onclick="showTab('applied');return false">실행세율</a> 탭에, 조문 원문은 저장소의 <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/docs/실행세율_법령근거.md" target="_blank" rel="noopener">실행세율_법령근거.md</a>에 있다.</p>
+      <p><b>왜 "실행세율"이 따로 있나.</b> 세율이 여럿이면 어느 것이 실제로 적용되는지를 정해야 한다. 관세법 제50조가 그 우선순위를 정하고, FTA 관세특례법 제5조가 협정세율과의 관계를 정한다. 건고추(<code>0904210000</code>)는 2025년에 기본세율 50%, 양허관세 270% 또는 kg당 6,210원, 한-미 FTA 18%가 함께 있는데, 조문을 따르면 적용 세율이 원산지에 따라 갈려서, 가령 협정이 없는 나라에서 온 수입에는 270%가, 미국산에는 18%가 적용된다. 이 DB는 그 판정을 코드×연도마다 해 두었다(<code>fct_applied_rate</code>, 237,990행). 어떤 규칙으로 정했는지는 <a href="#" onclick="showTab('applied');return false">실행세율</a> 탭에, 조문 원문은 저장소의 <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/docs/applied-rate-legal-basis.md" target="_blank" rel="noopener">applied-rate-legal-basis.md</a>에 있다.</p>
       <p><b>누구를 위한 것인가.</b> 무역통계와 세율을 함께 놓고 보려는 연구자가 주 독자다. 무역통계 DB <a href="https://pilsunchoi.github.io/KCSDB2/" target="_blank" rel="noopener">KCSDB2</a>는 관세율이 없다고 명시하는데, 그 빈자리를 이 DB가 채운다. 두 파일을 함께 열고 연도와 코드로 이어 붙이면 "어떤 수입이 어떤 세율을 만났는가"를 코드 단위로 볼 수 있다. 반대로 이 DB가 답하지 못하는 것도 분명하다. FTA 세율은 특혜를 신청했을 때 적용될 수 있는 세율이지 실제로 낸 세율이 아니고(실제로 신청했는지는 자료에 없다), FTA 일곱 상대 밖의 협정(칠레·호주·RCEP 등)은 들어 있지 않으며, 관세율표 화면은 1월 1일 기준이라 하반기에 지정되는 할당관세 같은 연중 변경을 놓칠 수 있다.</p>
     </div>
 
@@ -507,7 +507,7 @@
     <p class="sub">연도별로 보면 2007~2014년 38행, 2015~2019년 32행(쌀 관세화), 2020~2021년 31행, 2022년부터 1행(영화필름 코드 폐지)이다. 분석에서는 이 행을 빼거나 <code>specific_won_kg</code>를 따로 다룬다.</p>
 
     <h3>근거 조문</h3>
-    <p>적용한 조문은 관세법 제49조(세율의 종류)·제50조(세율 적용의 우선순위), 자유무역협정의 이행을 위한 관세법의 특례에 관한 법률 제5조(세율 적용의 우선순위), 세계무역기구협정 등에 의한 양허관세 규정 제6조(양허세율 우선적용물품)이다. 2026-09-12에 국가법령정보센터에서 확인한 원문과 구분기호의 대응표가 저장소의 <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/docs/실행세율_법령근거.md" target="_blank" rel="noopener">docs/실행세율_법령근거.md</a>에 있다. 법령이 바뀌면 그 문서와 <code>scripts/02_build_applied_rate.py</code>를 함께 고친다.</p>
+    <p>적용한 조문은 관세법 제49조(세율의 종류)·제50조(세율 적용의 우선순위), 자유무역협정의 이행을 위한 관세법의 특례에 관한 법률 제5조(세율 적용의 우선순위), 세계무역기구협정 등에 의한 양허관세 규정 제6조(양허세율 우선적용물품)이다. 2026-09-12에 국가법령정보센터에서 확인한 원문과 구분기호의 대응표가 저장소의 <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/docs/applied-rate-legal-basis.md" target="_blank" rel="noopener">docs/applied-rate-legal-basis.md</a>에 있다. 법령이 바뀌면 그 문서와 <code>scripts/02_build_applied_rate.py</code>를 함께 고친다.</p>
   </section>
 
   <!-- ============ 데이터 함정 ============ -->
@@ -690,7 +690,7 @@ WHERE f.hs10 = '0904210000' AND f.stat_cd = 'CN' AND f.yyyymm >= 202401""").show
           <tr><td>관세법령정보포털 관세율표 화면</td><td><code>openULS0201005Q</code></td><td>tariff_code · tariff_rate (table)</td><td>류 2자리(<code>hsfdCd</code>)와 연도(<code>aplyYy</code>)로 요청. 연도당 97회. 탄력·양허는 스크립트에서 읽는다</td></tr>
           <tr><td>관세법령정보포털 주요세율보기 화면</td><td><code>openULS0201017Q</code></td><td>tariff_rate (main · fill)</td><td>같은 방식. FTA 일곱 상대와 연중 구간</td></tr>
           <tr><td>관세법령정보포털 품목 상세 화면</td><td><code>openULS0201007Q</code></td><td>검증에만</td><td>코드 하나·연도 하나씩. 그 밖의 FTA 세율은 여기에만 있다. 2012년부터만 세율을 준다</td></tr>
-          <tr><td>국가법령정보센터 관세법·FTA 특례법·양허관세 규정</td><td><a href="https://www.law.go.kr/" target="_blank" rel="noopener">law.go.kr</a></td><td>fct_applied_rate 규칙</td><td>조문 원문은 <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/docs/실행세율_법령근거.md" target="_blank" rel="noopener">실행세율_법령근거.md</a>. 양허관세 규정 별표 1은 ZIP 안 xlsx(선택 세율의 「양자 중 고액」 확인)</td></tr>
+          <tr><td>국가법령정보센터 관세법·FTA 특례법·양허관세 규정</td><td><a href="https://www.law.go.kr/" target="_blank" rel="noopener">law.go.kr</a></td><td>fct_applied_rate 규칙</td><td>조문 원문은 <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/docs/applied-rate-legal-basis.md" target="_blank" rel="noopener">applied-rate-legal-basis.md</a>. 양허관세 규정 별표 1은 ZIP 안 xlsx(선택 세율의 「양자 중 고액」 확인)</td></tr>
           <tr><td>공공데이터포털 품목번호별 관세율표</td><td><a href="https://www.data.go.kr/data/15051179/fileData.do" target="_blank" rel="noopener"><code>15051179</code></a></td><td>대조에만</td><td>관세청 XLSX. 현행판과 직전판만 있다. 같은 자료의 이용 조건(공공누리 제1유형)이 여기에 적혀 있다</td></tr>
           <tr><td>무역통계 DB KCSDB2</td><td><a href="https://pilsunchoi.github.io/KCSDB2/" target="_blank" rel="noopener">pilsunchoi.github.io/KCSDB2</a></td><td>커버리지 검증</td><td>있으면 수입액 가운데 세율이 붙는 몫을 계산한다. 없으면 건너뛴다</td></tr>
         </tbody>
@@ -727,11 +727,11 @@ python scripts/02_build_applied_rate.py --load   # 실행세율 파생표를 만
             <li>검증 다섯 겹: 두 화면 대조(기본세율 99.80%·WTO 99.97% 일치), 알려진 값 여덟, 품목 상세 화면과 22,164행 대조, 무역통계 커버리지 99.92~100%, 그리고 2025년 표본 214개를 관세법 별표 관세율표(HWP)·양허관세 규정 별표·조정관세 규정 별표에서 직접 읽어 전부 일치.</li>
           </ul>
           <div class="mono-links">
-            <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/docs/연구/자료구축/실행세율_자료구축.md" target="_blank" rel="noopener">문서 읽기</a>
-            <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/docs/연구/자료구축/프로그램.ipynb" target="_blank" rel="noopener">파이썬 노트북</a>
+            <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/docs/research/applied-rate-dataset/paper.md" target="_blank" rel="noopener">문서 읽기</a>
+            <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/docs/research/applied-rate-dataset/program.ipynb" target="_blank" rel="noopener">파이썬 노트북</a>
             <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/scripts/01_fetch_tariff.py" target="_blank" rel="noopener">수집 스크립트</a>
             <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/scripts/02_build_applied_rate.py" target="_blank" rel="noopener">실행세율 스크립트</a>
-            <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/docs/실행세율_법령근거.md" target="_blank" rel="noopener">법령 근거</a>
+            <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/docs/applied-rate-legal-basis.md" target="_blank" rel="noopener">법령 근거</a>
           </div>
         </div>
       </article>
@@ -747,8 +747,8 @@ python scripts/02_build_applied_rate.py --load   # 실행세율 파생표를 만
           <p class="mono-desc"><b>무엇을 찾았나.</b> 결과는 셋이다. 첫째, 종량 하한이 있는 코드(HSK 10단위 품목번호) 31개에서 하한 아래로 신고된 수입액은 0.1%이고 건고추·참깨·대두는 0이며, 건고추의 단가는 냉동고추 단가의 5배와 맞아 원가와 어긋나지 않는다. 둘째, 종량 하한이 사실상 없는 건조생강에서는 중국산 단가가 2012년 kg당 1.94달러에서 2020~2021년 0.46달러로 내려가 신선생강 단가의 10배 대비 3~4%가 되었고, 중국이 kg당 5달러로 보고한 물품을 한국은 0.45달러로 신고했다. 이 과소신고는 사전세액심사 대상 지정(2022년 3월)이 아니라 그보다 넉 달 앞선 언론 보도와 국정감사 직후(2021년 11월)에 끝났으며, 선행 사건일 기준의 사후 단가 상승은 로그 2.24(<i>t</i> 27)이고 공식 지정일 기준으로는 단절이 이미 지나가 있다. 셋째, 집행 지정의 효과는 지정 전에 과소신고가 있었는지에 달려 있다. 2016년 이후 지정된 사전세액심사 코드 가운데 중국산 단가를 지정 전후로 관측할 수 있는 31개 전체에서 평균 효과는 0이지만, 지정 전 원가 대비 단가 갭으로 나누면 과소신고가 있던 셋에서만 사후 단가가 로그 1.21 오르고 없던 22개에서는 오르지 않는다.</p>
           <p class="mono-desc"><b>무엇을 뜻하나.</b> 미러 갭 회귀에서 세율 수준의 계수가 0인 것도 세율이 높은 코드의 대부분에 종량 하한이 있기 때문으로 읽힌다. 코드 단위에서 수입자의 행태를 따라가는 이런 미시적 분석은 종량세를 얼마로 정할지(세율 설계)와 심사 자원을 어느 코드에 둘지(집행의 배분)에 근거를 준다.</p>
           <div class="mono-links">
-            <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/docs/연구/종량하한과_과소신고/종량하한과_과소신고.md" target="_blank" rel="noopener">문서 읽기</a>
-            <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/docs/연구/종량하한과_과소신고/분석_파이썬_코드.ipynb" target="_blank" rel="noopener">파이썬 노트북</a>
+            <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/docs/research/specific-duty-floor/paper.md" target="_blank" rel="noopener">문서 읽기</a>
+            <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/docs/research/specific-duty-floor/analysis.ipynb" target="_blank" rel="noopener">파이썬 노트북</a>
           </div>
         </div>
       </article>

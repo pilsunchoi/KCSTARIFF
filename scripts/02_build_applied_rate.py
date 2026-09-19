@@ -2,7 +2,7 @@
 02_build_applied_rate.py — 연도×HS10의 실행세율(applicable rate)을 만든다.
 
 근거: 관세법 제50조(세율 적용의 우선순위), FTA 관세특례법 제5조, 양허관세 규정 제6조.
-조문 원문과 세율 구분 코드의 대응은 docs/실행세율_법령근거.md.
+조문 원문과 세율 구분 코드의 대응은 docs/applied-rate-legal-basis.md.
 
 규칙(연구 문서 IV.1절):
   기본   = A(기본세율). 잠정세율은 자료에 없다.
