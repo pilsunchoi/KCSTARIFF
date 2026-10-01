@@ -16,5 +16,11 @@ CLAUDE.md
 __pycache__/
 .ipynb_checkpoints/
 
-# 연구 작업 폴더(로컬 전용). 공개할 산출물만 docs/로 옮긴다
-research/
+# 연구 폴더: 논문·노트북·스크립트는 올리고 작업 부산물만 뺀다
+research/data/
+research/cache/
+research/outputs/
+research/common/
+# 공개 전 연구. 공개할 때 해당 줄만 지운다(복사하지 않는다)
+research/rate-gap-code-pairs/
+research/tariff-cut-incidence/

@@ -727,8 +727,8 @@ python scripts/02_build_applied_rate.py --load   # 실행세율 파생표를 만
             <li>검증 다섯 겹: 두 화면 대조(기본세율 99.80%·WTO 99.97% 일치), 알려진 값 여덟, 품목 상세 화면과 22,164행 대조, 무역통계 커버리지 99.92~100%, 그리고 2025년 표본 214개를 관세법 별표 관세율표(HWP)·양허관세 규정 별표·조정관세 규정 별표에서 직접 읽어 전부 일치.</li>
           </ul>
           <div class="mono-links">
-            <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/docs/research/applied-rate-dataset/paper.md" target="_blank" rel="noopener">문서 읽기</a>
-            <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/docs/research/applied-rate-dataset/program.ipynb" target="_blank" rel="noopener">파이썬 노트북</a>
+            <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/research/applied-rate-dataset/paper.md" target="_blank" rel="noopener">문서 읽기</a>
+            <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/research/applied-rate-dataset/program.ipynb" target="_blank" rel="noopener">파이썬 노트북</a>
             <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/scripts/01_fetch_tariff.py" target="_blank" rel="noopener">수집 스크립트</a>
             <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/scripts/02_build_applied_rate.py" target="_blank" rel="noopener">실행세율 스크립트</a>
             <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/docs/applied-rate-legal-basis.md" target="_blank" rel="noopener">법령 근거</a>
@@ -747,8 +747,8 @@ python scripts/02_build_applied_rate.py --load   # 실행세율 파생표를 만
           <p class="mono-desc"><b>무엇을 찾았나.</b> 결과는 셋이다. 첫째, 종량 하한이 있는 코드(HSK 10단위 품목번호) 31개에서 하한 아래로 신고된 수입액은 0.1%이고 건고추·참깨·대두는 0이며, 건고추의 단가는 냉동고추 단가의 5배와 맞아 원가와 어긋나지 않는다. 둘째, 종량 하한이 사실상 없는 건조생강에서는 중국산 단가가 2012년 kg당 1.94달러에서 2020~2021년 0.46달러로 내려가 신선생강 단가의 10배 대비 3~4%가 되었고, 중국이 kg당 5달러로 보고한 물품을 한국은 0.45달러로 신고했다. 이 과소신고는 사전세액심사 대상 지정(2022년 3월)이 아니라 그보다 넉 달 앞선 언론 보도와 국정감사 직후(2021년 11월)에 끝났으며, 선행 사건일 기준의 사후 단가 상승은 로그 2.24(<i>t</i> 27)이고 공식 지정일 기준으로는 단절이 이미 지나가 있다. 셋째, 집행 지정의 효과는 지정 전에 과소신고가 있었는지에 달려 있다. 2016년 이후 지정된 사전세액심사 코드 가운데 중국산 단가를 지정 전후로 관측할 수 있는 31개 전체에서 평균 효과는 0이지만, 지정 전 원가 대비 단가 갭으로 나누면 과소신고가 있던 셋에서만 사후 단가가 로그 1.21 오르고 없던 22개에서는 오르지 않는다.</p>
           <p class="mono-desc"><b>무엇을 뜻하나.</b> 미러 갭 회귀에서 세율 수준의 계수가 0인 것도 세율이 높은 코드의 대부분에 종량 하한이 있기 때문으로 읽힌다. 코드 단위에서 수입자의 행태를 따라가는 이런 미시적 분석은 종량세를 얼마로 정할지(세율 설계)와 심사 자원을 어느 코드에 둘지(집행의 배분)에 근거를 준다.</p>
           <div class="mono-links">
-            <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/docs/research/specific-duty-floor/paper.md" target="_blank" rel="noopener">문서 읽기</a>
-            <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/docs/research/specific-duty-floor/analysis.ipynb" target="_blank" rel="noopener">파이썬 노트북</a>
+            <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/research/specific-duty-floor/paper.md" target="_blank" rel="noopener">문서 읽기</a>
+            <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/research/specific-duty-floor/analysis.ipynb" target="_blank" rel="noopener">파이썬 노트북</a>
           </div>
         </div>
       </article>
