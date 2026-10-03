@@ -37,7 +37,9 @@ REGIME_COL = {"FCN1": "cn", "FEU1": "eu", "FUS1": "us", "FAS1": "asean", "FIN1":
 
 def origin_map(con) -> pd.DataFrame:
     """(stat_cd, from_year, to_year, rate_col). 한 원산지에 협정이 여럿이면 FTA 열을 쓴다(그 열이 이미 낮은 쪽을 담는다)."""
-    o = con.sql("SELECT stat_cd, regime, from_year, to_year FROM tr.dim_origin_regime").df()
+    # 초고 당시의 원산지 표(2026-10-03 scripts/02가 적용 시작일·영국 처리를 바꾸기 전) — 초고 재현을 위해 고정한다
+    OLD_REGIME = [("CN", "FCN1", 2015, 9999), ("IN", "FIN1", 2010, 9999), ("US", "FUS1", 2012, 9999), ("VN", "FVN1", 2015, 9999), ("CA", "FCA1", 2015, 9999), ("AT", "FEU1", 2011, 9999), ("BE", "FEU1", 2011, 9999), ("BG", "FEU1", 2011, 9999), ("CY", "FEU1", 2011, 9999), ("CZ", "FEU1", 2011, 9999), ("DK", "FEU1", 2011, 9999), ("EE", "FEU1", 2011, 9999), ("FI", "FEU1", 2011, 9999), ("FR", "FEU1", 2011, 9999), ("DE", "FEU1", 2011, 9999), ("GR", "FEU1", 2011, 9999), ("HU", "FEU1", 2011, 9999), ("IE", "FEU1", 2011, 9999), ("IT", "FEU1", 2011, 9999), ("LV", "FEU1", 2011, 9999), ("LT", "FEU1", 2011, 9999), ("LU", "FEU1", 2011, 9999), ("MT", "FEU1", 2011, 9999), ("NL", "FEU1", 2011, 9999), ("PL", "FEU1", 2011, 9999), ("PT", "FEU1", 2011, 9999), ("RO", "FEU1", 2011, 9999), ("SK", "FEU1", 2011, 9999), ("SI", "FEU1", 2011, 9999), ("ES", "FEU1", 2011, 9999), ("SE", "FEU1", 2011, 9999), ("HR", "FEU1", 2013, 9999), ("GB", "FEU1", 2011, 2020), ("BN", "FAS1", 2008, 9999), ("KH", "FAS1", 2008, 9999), ("ID", "FAS1", 2008, 9999), ("LA", "FAS1", 2008, 9999), ("MY", "FAS1", 2008, 9999), ("MM", "FAS1", 2008, 9999), ("PH", "FAS1", 2008, 9999), ("SG", "FAS1", 2008, 9999), ("TH", "FAS1", 2008, 9999), ("VN", "FAS1", 2008, 9999), ("CN", "E1", 2007, 9999), ("IN", "E1", 2007, 9999), ("LK", "E1", 2007, 9999), ("MN", "E1", 2007, 9999), ("BD", "E2", 2007, 9999), ("LA", "E3", 2007, 9999)]
+    o = pd.DataFrame(OLD_REGIME, columns=["stat_cd", "regime", "from_year", "to_year"])
     o["col"] = o.regime.map(REGIME_COL)
     o["pri"] = o.regime.str.startswith("F").astype(int)
     rows = []

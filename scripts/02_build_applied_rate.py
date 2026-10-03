@@ -15,6 +15,10 @@
   협정   = FTA 일곱 상대(FCN1·FEU1·FUS1·FAS1·FIN1·FVN1·FCA1)와 APTA(E1·E2·E3)는
            무협정 적용세율보다 낮을 때만 적용(특례법 제5조①, 제50조③).
   연중 변경 = 구간별 세율을 그해 유효 일수로 가중평균한다(rate_*), 1월 1일 세율도 둔다(*_jan).
+  발효일   = 주요세율보기 화면의 협정세율 기간은 발효 해의 1월 1일부터 잡혀 있다(한-EU 2011, 한-미 2012,
+             한-중·한-베트남 2015). 협정마다 한국의 적용 시작일(ENTRY)로 기간을 자르고, 발효 해의 협정 적용세율은
+             발효 전 날은 무협정 세율, 발효 뒤 날은 협정 적용세율로 일수 가중한다(2026-10-03). r_*(협정)는 적용 중인
+             날의 평균이고, 1월 1일에 아직 적용 전이면 j_*(협정)는 비운다.
   종량 하한 = 선택 세율("N% 또는 M원")이 있는 규정에서 M/N(원/kg). 격차 변수에는 종가세율만 쓴다.
 
 산출:
@@ -40,15 +44,27 @@ OUT = ROOT / "outputs"
 
 FTA = {"FCN1": "cn", "FEU1": "eu", "FUS1": "us", "FAS1": "asean", "FIN1": "in", "FVN1": "vn", "FCA1": "ca"}
 
-# 원산지(관세청 stat_cd = ISO2) → 협정. (regime, from_year, to_year)
+# 협정별 한국의 적용 시작일(아세안은 첫 회원국들의 날짜; 회원국별 날짜는 ORIGIN_REGIME의 from_date)
+ENTRY = {"FAS1": "2007-06-01", "FIN1": "2010-01-01", "FEU1": "2011-07-01", "FUS1": "2012-03-15",
+         "FCA1": "2015-01-01", "FCN1": "2015-12-20", "FVN1": "2015-12-20"}
+
+# 원산지(관세청 stat_cd = ISO2) → 협정. (regime, from_year, to_year, from_date)
+#   from_date = 한국이 그 원산지에 협정세율을 적용하기 시작한 날. from_year = 그 협정세율이 이 자료에서 처음 적용되는 해
+#   (발효가 연중이면 발효 해; 한-아세안은 2007년 세율이 포털에 없어 2008년부터).
+#   영국은 2021년부터 한-영 협정이 한-EU 양허 일정을 이어받았으므로 EU 세율을 계속 쓴다(2026-10-03).
+#   세율 자료에 없는 협정(칠레·EFTA·페루·튀르키예·호주·뉴질랜드·콜롬비아·중미·RCEP·이스라엘·인도네시아/필리핀 양자·UAE)의
+#   상대국은 이 표에 없다 — 무협정 원산지로 쓰기 전에 연구 문서 IV.5절을 볼 것.
 EU27 = ["AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR", "DE", "GR", "HU", "IE", "IT", "LV", "LT", "LU", "MT", "NL", "PL", "PT", "RO", "SK", "SI", "ES", "SE"]
 ASEAN = ["BN", "KH", "ID", "LA", "MY", "MM", "PH", "SG", "TH", "VN"]
 APTA_E1 = ["CN", "IN", "LK", "MN"]      # 일반 협정세율
+ASEAN_DATE = {"SG": "2007-06-01", "MY": "2007-06-01", "VN": "2007-06-01", "MM": "2007-06-01", "ID": "2007-06-01",
+              "PH": "2008-01-01", "BN": "2008-07-01", "LA": "2008-10-01", "KH": "2008-11-01", "TH": "2010-01-01"}
 ORIGIN_REGIME = (
-    [("CN", "FCN1", 2015, 9999), ("IN", "FIN1", 2010, 9999), ("US", "FUS1", 2012, 9999), ("VN", "FVN1", 2015, 9999), ("CA", "FCA1", 2015, 9999)]
-    + [(c, "FEU1", 2011, 9999) for c in EU27 if c != "HR"] + [("HR", "FEU1", 2013, 9999)] + [("GB", "FEU1", 2011, 2020)]
-    + [(c, "FAS1", 2008, 9999) for c in ASEAN]
-    + [(c, "E1", 2007, 9999) for c in APTA_E1] + [("BD", "E2", 2007, 9999), ("LA", "E3", 2007, 9999)]
+    [("CN", "FCN1", 2015, 9999, "2015-12-20"), ("IN", "FIN1", 2010, 9999, "2010-01-01"), ("US", "FUS1", 2012, 9999, "2012-03-15"),
+     ("VN", "FVN1", 2015, 9999, "2015-12-20"), ("CA", "FCA1", 2015, 9999, "2015-01-01")]
+    + [(c, "FEU1", 2011, 9999, "2011-07-01") for c in EU27 if c != "HR"] + [("HR", "FEU1", 2013, 9999, "2013-07-01"), ("GB", "FEU1", 2011, 9999, "2011-07-01")]
+    + [(c, "FAS1", max(2008, int(ASEAN_DATE[c][:4])), 9999, ASEAN_DATE[c]) for c in ASEAN]
+    + [(c, "E1", 2007, 9999, "") for c in APTA_E1] + [("BD", "E2", 2007, 9999, ""), ("LA", "E3", 2007, 9999, "")]
 )
 
 
@@ -59,6 +75,15 @@ def load_rates() -> pd.DataFrame:
     con.close()
     df["valid_from"] = pd.to_datetime(df.valid_from)
     df["valid_to"] = pd.to_datetime(df.valid_to)
+    # 협정세율은 적용 시작일 전으로 잡힌 기간을 자른다
+    ent = pd.to_datetime(df.rate_cd.map(ENTRY))
+    ystart = pd.to_datetime(df.year.astype(str) + "-01-01"); yend = pd.to_datetime(df.year.astype(str) + "-12-31")
+    vt = df.valid_to.fillna(yend)
+    drop = ent.notna() & (vt < ent)
+    df = df[~drop].copy(); ent = ent[~drop]; ystart = ystart[~drop]
+    vf = df.valid_from.fillna(ystart)
+    df["valid_from"] = np.where(ent.notna() & (vf < ent), ent, df.valid_from)
+    df["valid_from"] = pd.to_datetime(df.valid_from)
     return df
 
 
@@ -119,10 +144,17 @@ def build(df: pd.DataFrame) -> pd.DataFrame:
     mfn_j = domestic_j.where(~use2_j, tier2_j)
     t["mfn_jan"] = mfn_j.where(~usew, t.j_W2)
 
-    # ---- 협정·APTA 적용세율: 무협정보다 낮을 때만 ----
+    # ---- 협정·APTA 적용세율: 무협정보다 낮을 때만. 발효 해는 발효 전 날을 무협정 세율로 일수 가중 ----
+    yr = t.index.get_level_values("year")
     for cd, name in FTA.items():
         r = t[f"r_{cd}"]
-        t[f"applied_{name}"] = np.where(r.notna() & (r < t.mfn), r, t.mfn)
+        a = np.where(r.notna() & (r < t.mfn), r, t.mfn)
+        e = pd.Timestamp(ENTRY[cd]); ndays = np.where(pd.Series(yr).astype(int) % 4 == 0, 366, 365)
+        share = np.where(yr < e.year, 0.0, np.where(yr > e.year, 1.0, ((pd.Timestamp(f"{e.year}-12-31") - e).days + 1) / ndays))
+        t[f"applied_{name}"] = share * a + (1 - share) * t.mfn
+        t[f"inforce_{name}"] = share                                    # 그해 협정이 적용된 날의 몫
+        if e != pd.Timestamp(f"{e.year}-01-01"):
+            t.loc[yr == e.year, f"j_{cd}"] = np.nan                     # 1월 1일에는 아직 적용 전
     for cd, name in [("E1", "apta"), ("E2", "apta_bd"), ("E3", "apta_la")]:
         r = t[f"r_{cd}"]
         t[f"applied_{name}"] = np.where(r.notna() & (r < t.mfn), r, t.mfn)
@@ -221,7 +253,7 @@ def main() -> None:
     validate(t)
     OUT.mkdir(exist_ok=True)
     t.to_parquet(OUT / "fct_applied_rate.parquet", index=False)
-    dim = pd.DataFrame(ORIGIN_REGIME, columns=["stat_cd", "regime", "from_year", "to_year"])
+    dim = pd.DataFrame(ORIGIN_REGIME, columns=["stat_cd", "regime", "from_year", "to_year", "from_date"])
     dim.to_csv(OUT / "dim_origin_regime.csv", index=False, encoding="utf-8-sig")
     print(f"fct_applied_rate {len(t):,}행, 미확정 {int(t.rate_undetermined.sum()):,}행 {t[t.rate_undetermined].undetermined_reason.value_counts().to_dict()}, 종량 하한 있음 {int(t.floor_won_kg.notna().sum()):,}행")
     print("MFN 규정 분포:", t.mfn_regime.value_counts().to_dict())

@@ -18,7 +18,7 @@
 | `tariff_rate` | 2,024,063 | 연도×HS10×세율 구분. 화면 문구(`rate_txt`), 종가(`adval`, %), 종량(`specific`, 원), 적용 기간(`valid_from`, `valid_to`), 출처(`source`: table/main/fill/annex) |
 | `dim_rate_cd` | 24 | 세율 구분 코드와 이름 |
 | `fct_applied_rate` | 237,990 | 연도×HS10 실행세율. 무협정 세율 `mfn`과 그 규정(`mfn_regime`), 1월 1일 값 `mfn_jan`, 일곱 상대의 원산지별 적용세율 `applied_cn/eu/us/asean/in/vn/ca`, 종량 하한 `floor_won_kg`, 조건부 세율 표시 `has_I/T1/T2/P1/W1`, 세율 미확정 표시와 사유 |
-| `dim_origin_regime` | 49 | 원산지(ISO2) → 협정 구분과 적용 연도 |
+| `dim_origin_regime` | 49 | 원산지(ISO2) → 협정 구분, 적용 연도, 한국의 적용 시작일(`from_date`) |
 | `meta_fetch` | — | 수집 기록 |
 
 세율 구분 24종: 기본 A, WTO C, 개도국 D·G1·G2, 아시아태평양 E1~E3, 국제협력 F, 덤핑방지 I(2016~), 조정 L, 할당 P1·P3, 특별긴급 T1·T2, 농림축산물 양허 W1(추천)·W2(미추천), FTA FCN1·FEU1·FUS1·FAS1·FIN1·FVN1·FCA1.
@@ -38,7 +38,7 @@
 
 ## 받기와 사용
 
-DB 파일(약 38MB)은 [Releases](https://github.com/pilsunchoi/KCSTARIFF/releases)에서 받는다(현재 `v1.0-2026`, 2026-09-13 게시). 저장소에는 없다.
+DB 파일(약 38MB)은 [Releases](https://github.com/pilsunchoi/KCSTARIFF/releases)에서 받는다(현재 `v1.0-2026`, 2026-09-13 게시, DB 파일 2026-10-03 갱신: 협정 적용 시작일 반영). 저장소에는 없다.
 
 ```python
 import duckdb
