@@ -39,7 +39,7 @@
 
 ## 받기와 사용
 
-DB 파일(약 38MB)은 [Releases](https://github.com/pilsunchoi/KCSTARIFF/releases)에서 받는다(현재 `v1.0-2026`, 2026-09-13 게시, DB 파일 2026-10-03 갱신: 협정 적용 시작일 반영). 저장소에는 없다.
+DB 파일(약 38MB)은 [Releases](https://github.com/pilsunchoi/KCSTARIFF/releases)에서 받는다(현재 `v1.1-2026`, 2026-10-03 게시: 협정 적용 시작일 반영과 `inforce_*`·`from_date` 열 추가. 앞 판 `v1.0-2026`은 2026-09-13). 저장소에는 없다.
 
 ```python
 import duckdb
