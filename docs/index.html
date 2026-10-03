@@ -311,7 +311,7 @@
           <tr><td><code>rate_txt</code></td><td>화면 문구</td><td>그대로 보존. 「270% 또는 6,210원」·「41,583원」·「0%」</td></tr>
           <tr><td><code>adval</code></td><td>문구에서 읽음</td><td>종가세율(%). 종량세만 있으면 NULL(1,093행)</td></tr>
           <tr><td><code>specific</code></td><td>문구에서 읽음</td><td>종량세액(원). 대부분 kg당. 9,701행에 있다</td></tr>
-          <tr><td><code>valid_from</code>, <code>valid_to</code></td><td>화면 적용 기간</td><td>관세율표 화면은 1월 1일~12월 31일. 주요세율보기는 연중 변경이 있으면 구간으로 나뉜다</td></tr>
+          <tr><td><code>valid_from</code>, <code>valid_to</code></td><td>화면 적용 기간</td><td>관세율표 화면은 1월 1일~12월 31일. 주요세율보기는 연중 변경이 있으면 구간으로 나뉜다. 포털 그대로라 발효 해의 협정세율도 1월 1일부터 잡혀 있다(<code>dim_origin_regime.from_date</code>로 자를 것)</td></tr>
           <tr><td><code>source</code></td><td>화면</td><td><code>table</code> · <code>main</code> · <code>fill</code></td></tr>
         </tbody>
       </table>
@@ -409,8 +409,8 @@
         <p>FTA 일곱 상대와 아시아·태평양 협정(<code>E1</code>~<code>E3</code>)은 2단계까지의 무협정 세율보다 낮을 때만 적용한다. 한 나라에 협정이 둘이면 낮은 쪽이다 — 중국·인도는 FTA와 아시아·태평양 협정 중, 베트남은 한-베트남 FTA와 한-아세안 FTA 중, 라오스는 아세안과 아시아·태평양(라오스) 중. 원산지에서 협정으로 가는 대응은 <code>dim_origin_regime</code>에 있다.</p>
       </li>
       <li>
-        <h4>연중 변경은 유효 일수로 가중평균</h4>
-        <p>주요세율보기가 기간을 나누어 준 세율은 그해 유효 일수로 가중평균해 <code>mfn</code>·<code>applied_*</code>에 넣고, 1월 1일 값은 <code>mfn_jan</code>과 <code>j_*</code>에 따로 둔다. 한-EU 2023년 소스 기타의 11.2%(1~6월)→8.4%(7~12월)는 9.79%가 된다. 연도 단위 분석은 가중평균을, 월 단위 분석은 <code>tariff_rate</code>의 구간을 쓴다.</p>
+        <h4>연중 변경은 유효 일수로 가중평균, 협정은 적용 시작일부터</h4>
+        <p>주요세율보기가 기간을 나누어 준 세율은 그해 유효 일수로 가중평균해 <code>mfn</code>·<code>applied_*</code>에 넣고, 1월 1일 값은 <code>mfn_jan</code>과 <code>j_*</code>에 따로 둔다. 한-EU 2023년 소스 기타의 11.2%(1~6월)→8.4%(7~12월)는 9.79%가 된다. 협정세율은 한국의 적용 시작일 전으로 잡힌 기간을 잘라 내고, 발효 해는 발효 전 날을 <code>mfn</code>으로 일수 가중한다(그 몫은 <code>inforce_*</code>). 연도 단위 분석은 가중평균을, 월 단위 분석은 <code>tariff_rate</code>의 구간을 쓰되 협정세율은 <code>dim_origin_regime.from_date</code> 전의 달을 무협정 세율로 바꾼다.</p>
       </li>
       <li>
         <h4>선택 세율은 종량 하한으로, 정해지지 않으면 미확정으로</h4>
@@ -660,7 +660,7 @@ WHERE f.hs10 = '0904210000' AND f.stat_cd = 'CN' AND f.yyyymm >= 202401""").show
 
     <div class="note warn">
       <b>단위.</b> 세율은 %(<code>adval</code>, <code>mfn</code>, <code>applied_*</code>), 종량세는 원(<code>specific</code>, 대부분 kg당), 종량 하한은 원/kg. 무역통계와 맞대려면 과세환율이 필요한데 이 DB에는 없다.<br>
-      <b>기준 시점.</b> 한 해에 한 세율표(1월 1일 기준)이고 <code>mfn</code>·<code>applied_*</code>는 연중 변경의 유효 일수 가중평균이다. 월 단위로 보려면 <code>tariff_rate</code>의 <code>valid_from</code>·<code>valid_to</code>를 쓴다. 1월 1일 값은 <code>mfn_jan</code>·<code>j_*</code>.<br>
+      <b>기준 시점.</b> 한 해에 한 세율표(1월 1일 기준)이고 <code>mfn</code>·<code>applied_*</code>는 연중 변경의 유효 일수 가중평균이다. 월 단위로 보려면 <code>tariff_rate</code>의 <code>valid_from</code>·<code>valid_to</code>를 쓴다. 다만 이 구간은 포털 그대로라 발효 해의 협정세율이 1월 1일부터 잡혀 있으므로, <code>dim_origin_regime.from_date</code> 전의 달은 무협정 세율로 바꿔야 한다. 1월 1일 값은 <code>mfn_jan</code>·<code>j_*</code>.<br>
       <b>걸러 낼 것.</b> <code>rate_undetermined</code>가 참인 527행은 세율로 읽지 않는다. 덤핑방지·특별긴급이 있는 코드(<code>has_I</code>·<code>has_T1</code>·<code>has_T2</code>)는 특정 원산지 수입이 더 높은 세율을 냈을 수 있다.<br>
       <b>협정 발효 전.</b> 한-EU는 2011년 7월 1일, 한-미는 2012년 3월 15일, 한-캐나다는 2015년 1월 1일, 한-중·한-베트남은 2015년 12월 20일부터다. 그 전 연도의 <code>applied_eu</code> 등은 <code>mfn</code>과 같고, 발효 해는 발효 전 날을 <code>mfn</code>으로 일수 가중한 값이다(그 몫은 <code>inforce_*</code>). 일곱 상대 밖의 협정 상대는 이 DB가 다루지 않는다.<br>
       <b>코드 개정.</b> HS 개정(2012·2017·2022)과 국내 개정(2025·2026)으로 코드가 바뀐다. 개정을 건너는 시계열은 KCSDB2의 연계표(<code>dim_hs10_to_2022</code> 등)로 잇는다.
@@ -770,7 +770,7 @@ python scripts/02_build_applied_rate.py --load   # 실행세율 파생표를 만
 
 <footer>
   <div class="wrap">
-    <p><span class="ver"><!-- DB_VERSION_FOOT:START -->v1.0-2026 · 2026-09-13 게시 · 세율표 2007~2026 (수집 2026-09-11)<!-- DB_VERSION_FOOT:END --></span></p>
+    <p><span class="ver"><!-- DB_VERSION_FOOT:START -->v1.0-2026 · 2026-09-13 게시 · DB 파일 갱신 2026-10-03 · 세율표 2007~2026 (수집 2026-09-11)<!-- DB_VERSION_FOOT:END --></span></p>
     <p><b>출처.</b> 관세청 관세법령정보포털의 관세율표·주요세율보기 화면 자료를 이용했다. 같은 자료의 공공데이터포털 공개본(<a href="https://www.data.go.kr/data/15051179/fileData.do" target="_blank" rel="noopener">15051179</a>)은 <b>공공누리 제1유형</b>(출처표시)이다. 자료별 출처와 받는 방법은 <a href="#" onclick="showTab('use');return false">받기·사용</a> 탭의 「어디서 받았나」에 있다. 관세청이 이 DB를 후원하거나 특수 관계에 있지 않다. 실행세율은 이 저장소가 조문을 해석해 만든 파생값이다. 이 저장소의 코드와 문서는 <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/LICENSE" target="_blank" rel="noopener">MIT 라이선스</a>를 따르며, 원자료는 그 대상이 아니다(<a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/NOTICE.md" target="_blank" rel="noopener">NOTICE</a>).</p>
     <p><b>고지.</b> 관세법령정보포털은 10단위 세율이 참고용이며 법적 효력이 없다고 밝힌다. 세액 계산이나 수입신고에는 관세법 별표와 해당 규정의 원문을 확인할 것. 무역통계 DB <a href="https://pilsunchoi.github.io/KCSDB2/" target="_blank" rel="noopener">KCSDB2</a>와 같은 체계로 만들었고 연도·HS10으로 조인된다. 이 DB를 코드별로 보여 주는 화면은 <a href="https://pilsunchoi.github.io/KoreaTariffAtlas/" target="_blank" rel="noopener">한국 관세 아틀라스</a>다.</p>
   </div>
