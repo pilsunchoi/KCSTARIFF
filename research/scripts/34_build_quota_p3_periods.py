@@ -29,10 +29,8 @@ def nums(rate: str) -> list:
     return [float(x) for x in re.findall(r"\d+(?:\.\d+)?", str(rate))]
 
 
-def main() -> None:
-    o = pd.read_csv(ROOT / "outputs" / "할당관세_시간표_hs10.csv", dtype={"hs10": str}).fillna({"quota": "", "rate": ""})
-    con = duckdb.connect(str(DB), read_only=True)
-    p3 = con.execute("select year, hs10, min(adval) p3 from tariff_rate where rate_cd='P3' group by 1, 2").df()
+def classify(o: pd.DataFrame, p3: pd.DataFrame) -> pd.DataFrame:
+    """시간표(코드×구간)에 세율 DB의 그해 P3 세율(p3)을 붙이고 구간마다 P1·P3(cls)와 근거(basis)를 정한다. scripts/35도 쓴다."""
     o = o.merge(p3, on=["year", "hs10"], how="left")
     q = o.quota.str.replace(r"\s+", "", regex=True)
     cds = o.rate_cd.fillna("")
@@ -45,6 +43,19 @@ def main() -> None:
     m2 = both & ~q.str.contains("수입전량") & (q != ""); cls[m2], basis[m2] = "P1", "quota"
     m3 = both & (q == ""); cls[m3] = ["P3" if m else "P1" for m in match[m3]]; basis[m3] = "db_rate"
     o["cls"], o["basis"] = cls, basis
+    return o
+
+
+def load_classified() -> pd.DataFrame:
+    o = pd.read_csv(ROOT / "outputs" / "할당관세_시간표_hs10.csv", dtype={"hs10": str}).fillna({"quota": "", "rate": ""})
+    con = duckdb.connect(str(DB), read_only=True)
+    p3 = con.execute("select year, hs10, min(adval) p3 from tariff_rate where rate_cd='P3' group by 1, 2").df()
+    con.close()
+    return classify(o, p3), p3
+
+
+def main() -> None:
+    o, p3 = load_classified()
     s = o[(o.cls == "P3") & o.p3.notna()].copy()                     # 3) 세율 DB에 그해 P3가 없으면 두지 않는다
 
     def pick(r, p):
