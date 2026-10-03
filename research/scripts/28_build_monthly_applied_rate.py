@@ -117,7 +117,7 @@ def main() -> None:
     t = apply_rules(t)
     keep = ["yyyymm", "year", "hs10", "mfn", "mfn_regime", "floor_won_kg", "rate_undetermined", "undetermined_reason",
             "has_W1", "has_P1", "has_I", "has_T1", "has_T2"] + [f"applied_{n}" for n in list(FTA.values()) + ["apta", "apta_bd", "apta_la", "la"]] \
-           + ["r_A", "r_C", "r_W2", "r_L", "r_P3", "r_F"] + [f"r_{c}" for c in FTA]
+           + ["r_A", "r_C", "r_W2", "r_L", "r_P3", "r_F", "r_E1", "r_E2", "r_E3"] + [f"r_{c}" for c in FTA]
     t = t[keep].sort_values(["yyyymm", "hs10"]).reset_index(drop=True)
     OUT.mkdir(exist_ok=True)
     t.to_parquet(OUT / "fct_applied_rate_monthly.parquet", index=False)
