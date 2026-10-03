@@ -14,7 +14,7 @@
 「├──┼…┤」 줄의 세로선 표시 위치(한글·괘선 두 칸 폭), 호 칸에 값이 있는 줄이 새 항목, 빈 줄이 항목 안의 구획을 가르며 세율이 있는
 구획이 행이 된다. 「├┐ … ├┘」 괄호로 한계수량 하나를 나눠 쓰는 행은 flag 'quota_shared'. 앞뒤 HWP 판본과 행이 이어진다(2011-01-28 판
 별표 2는 2011-01-01 판과 152행 전부 같음). 2009~2010년 7개 판본은 별표 제목에 기간이 없어
-(본문·부칙의 적용시한·적용례에 있다) period가 비고 flag에 'period_in_articles'. 원문의 호 오기는 HS4_FIX로 고치고 flag 'hs4_corrected'. 세율 칸에 값이 둘인 행(약 0.8%)은 flag 'rate_multi'.
+본문 제2조·제3조에서 읽은 기간(ARTICLE_PERIOD)을 넣고 flag 'period_from_articles'; 그래도 없으면 'period_missing'. 원문의 호 오기는 HS4_FIX로 고치고 flag 'hs4_corrected'. 세율 칸에 값이 둘인 행(약 0.8%)은 flag 'rate_multi'.
 """
 
 import html
@@ -42,8 +42,12 @@ def para_text(b):
     while i + 2 <= len(b):
         c = struct.unpack_from("<H", b, i)[0]
         if c < 32:
-            if c in (0, 10, 13):
+            if c == 10:                                   # 문단 안 줄바꿈: 칸 안의 「11 19 91 99」가 붙지 않게
+                out.append(" "); i += 2
+            elif c in (0, 13):
                 i += 2
+            elif c == 9:                                  # 탭(인라인 컨트롤, 8 WCHAR)도 칸 안의 값을 가른다
+                out.append(" "); i += 16
             else:
                 i += 16                                   # 확장·인라인 컨트롤은 8 WCHAR
             continue
@@ -123,6 +127,8 @@ def annex_rows(path):
         hs4 = sub = ""; path = {}
         for r in sorted(rows):
             d = rows[r]
+            if any(len(x.split()) > 1 and all(t.isdigit() for t in x.split()) for x in d.get("sub", [])):
+                d["sub"] = [t for x in d["sub"] for t in x.split()]   # 한 칸에 줄바꿈으로 적은 소호 여럿(2008-01-01 판 2710호)
             subs, rates = d.get("sub", []), d.get("rate", [])
             n = len(subs) if len(subs) > 1 and len(rates) in (1, len(subs)) else 1
             for i in range(n):
@@ -138,7 +144,7 @@ def annex_rows(path):
                     if not sb:
                         sub = ""; path = {}
                 if sb:
-                    sub = re.sub(r"\D", "", sb); path = {}
+                    sub = " ".join(re.findall(r"\d+", sb)); path = {}   # 병합 칸에 소호 여럿이면 공백으로 이어 두고 행마다 나눈다
                 nm = pick("name")
                 lv = next((l for p_, l in LEVEL if p_.match(nm)), 0)
                 if nm:
@@ -146,9 +152,10 @@ def annex_rows(path):
                     path[lv] = nm
                 rt = pick("rate")
                 if rt.strip():
-                    out.append({"table": tno, "row": r, "line": i, "hs4": hs4, "sub": sub,
-                                "name_path": " > ".join(path[k] for k in sorted(path)),
-                                "spec": " ".join(d.get("spec", [])), "rate": rt, "quota": " ".join(d.get("quota", []))})
+                    for sb_ in (sub.split() or [""]):
+                        out.append({"table": tno, "row": r, "line": i, "hs4": hs4, "sub": sb_,
+                                    "name_path": " > ".join(path[k] for k in sorted(path)),
+                                    "spec": " ".join(d.get("spec", [])), "rate": rt, "quota": " ".join(d.get("quota", []))})
     seen, uniq = set(), []                                     # 같은 내용의 행은 하나만
     for x in out:
         k = (x["hs4"], x["sub"], x["name_path"], x["spec"], x["rate"], x["quota"])
@@ -242,6 +249,20 @@ def text_rows(path):
 HS4_FIX = {("0403", "41", "비스코스레이온의 것"): "5403"}
 
 
+# 별표 제목에 기간이 없는 2009~2010년 판본: 본문 제2조(적용시한)·제3조(기간별 할당관세의 적용에 관한 특례)에서 읽은 기간.
+# 2009년 상반기 판은 1월에는 별표 3을 갈음해 별표 1을, 2월에는 별표 2를 적용하므로 별표 3의 적용은 3월 1일부터다
+# (한계수량은 별표 1이 1월분, 별표 2가 1~2월분, 별표 3이 1~6월분). 본문은 scripts/30이 받은 판본 폴더의 본문.html.
+ARTICLE_PERIOD = {
+    ("20090101", "1"): ("2009-01-01", "2009-01-31"), ("20090101", "2"): ("2009-02-01", "2009-02-28"),
+    ("20090101", "3"): ("2009-03-01", "2009-06-30"),
+    ("20090521", "1"): ("2009-01-01", "2009-01-31"), ("20090521", "2"): ("2009-02-01", "2009-02-28"),
+    ("20090521", "3"): ("2009-03-01", "2009-06-30"),
+    ("20090701", ""): ("2009-07-01", "2009-12-31"),
+    ("20100101", ""): ("2010-01-01", "2010-12-31"), ("20100825", ""): ("2010-01-01", "2010-12-31"),
+    ("20101012", ""): ("2010-01-01", "2010-12-31"), ("20101115", ""): ("2010-01-01", "2010-12-31"),
+}
+
+
 def period(title: str, ef: str):
     t = re.sub(r"\s+", "", title)
     m = re.search(r"(\d{4})년(\d+)월(\d+)일부터(?:(\d{4})년)?(\d+)월(\d+)일까지", t)
@@ -264,10 +285,14 @@ def main() -> None:
     rows = []
     for _, r in m.iterrows():
         ps, pe = period(r.title, r.efYd)
+        art = ARTICLE_PERIOD.get((r.efYd, r.byl_no if isinstance(r.byl_no, str) else ""))
+        if not ps and art:
+            ps, pe = art
         for x in (annex_rows if r.fmt == "hwp" else text_rows)(base / r.path):
             num = re.fullmatch(r"\s*(\d+(?:\.\d+)?)\s*%?\s*", x["rate"])
             flag = [] if num else ["rate_multi"]
-            if not ps: flag.append("period_in_articles")
+            if not ps: flag.append("period_missing")
+            elif art and not period(r.title, r.efYd)[0]: flag.append("period_from_articles")
             if x.get("shared"): flag.append("quota_shared")
             fix = HS4_FIX.get((x["hs4"], x["sub"], x["name_path"]))
             if fix:
