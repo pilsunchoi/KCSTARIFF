@@ -19,6 +19,10 @@
              한-중·한-베트남 2015). 협정마다 한국의 적용 시작일(ENTRY)로 기간을 자르고, 발효 해의 협정 적용세율은
              발효 전 날은 무협정 세율, 발효 뒤 날은 협정 적용세율로 일수 가중한다(2026-10-03). r_*(협정)는 적용 중인
              날의 평균이고, 1월 1일에 아직 적용 전이면 j_*(협정)는 비운다.
+  할당관세 = 관세율표 화면의 P3는 그해에 한 번이라도 지정된 품목에 기간 없이 붙어 있다. 할당관세 규정의 판본별 별표로
+             만든 P3 적용 구간(data/quota/quota_p3_periods.csv, research/scripts/30~34)으로 P3 행을 바꾸고, 무협정 세율은
+             P3가 적용된 날(P3 우선)과 아닌 날(조정·기본·WTO·양허 규칙)의 값을 일수로 가중한다(p3_share = P3 적용 일수 몫;
+             mfn_regime은 더 많은 날의 구분, 2026-10-03). 1월 1일에 P3가 적용 중이 아니면 j_P3는 비운다.
   종량 하한 = 선택 세율("N% 또는 M원")이 있는 규정에서 M/N(원/kg). 격차 변수에는 종가세율만 쓴다.
 
 산출:
@@ -41,6 +45,7 @@ ROOT = Path(__file__).resolve().parent.parent
 TARIFF = ROOT / "data" / "processed" / "kcstariff.duckdb"
 KCS = Path(os.environ.get("KCSDB2_PATH", ROOT.parent / "KCSDB2" / "data" / "processed" / "kcsdb.duckdb"))   # 있으면 커버리지 검증
 OUT = ROOT / "outputs"
+P3_PERIODS = ROOT / "data" / "quota" / "quota_p3_periods.csv"
 
 FTA = {"FCN1": "cn", "FEU1": "eu", "FUS1": "us", "FAS1": "asean", "FIN1": "in", "FVN1": "vn", "FCA1": "ca"}
 
@@ -84,6 +89,13 @@ def load_rates() -> pd.DataFrame:
     vf = df.valid_from.fillna(ystart)
     df["valid_from"] = np.where(ent.notna() & (vf < ent), ent, df.valid_from)
     df["valid_from"] = pd.to_datetime(df.valid_from)
+    # 할당관세(P3): 포털의 연 단위 행을 별표 기반 적용 구간으로 바꾼다. 구간 파일에 없는 해·코드의 P3는 적용 날이 없다.
+    if P3_PERIODS.exists():
+        per = pd.read_csv(P3_PERIODS, dtype={"hs10": str})
+        txt = df[df.rate_cd == "P3"].drop_duplicates(["year", "hs10"]).set_index(["year", "hs10"]).rate_txt
+        per = per.assign(rate_cd="P3", specific=np.nan, valid_from=pd.to_datetime(per.valid_from), valid_to=pd.to_datetime(per.valid_to),
+                         rate_txt=[txt.get((y, h), f"{a:g}%") for y, h, a in zip(per.year, per.hs10, per.adval)])
+        df = pd.concat([df[df.rate_cd != "P3"], per[df.columns]], ignore_index=True)
     return df
 
 
@@ -99,10 +111,12 @@ def weight_by_days(df: pd.DataFrame) -> pd.DataFrame:
     df["wden"] = np.where(has, df.days, 0)
     keys = ["year", "hs10", "rate_cd"]
     g = df.groupby(keys, sort=False)
-    out = g.agg(wnum=("wnum", "sum"), wden=("wden", "sum"), specific=("specific", "max"), txt=("rate_txt", "first")).reset_index()
+    out = g.agg(wnum=("wnum", "sum"), wden=("wden", "sum"), days=("days", "sum"), specific=("specific", "max"), txt=("rate_txt", "first")).reset_index()
     out["rate"] = np.where(out.wden > 0, out.wnum / out.wden.replace(0, np.nan), np.nan)
     # 1월 1일 세율: 시작일이 가장 이른 행(종가 있는 것 우선)
-    first = df[has].sort_values(keys + ["vf"]).drop_duplicates(keys)[keys + ["adval"]].rename(columns={"adval": "rate_jan"})
+    first = df[has].sort_values(keys + ["vf"]).drop_duplicates(keys)
+    first = first.assign(adval=first.adval.where((first.rate_cd != "P3") | (first.vf == ystart[first.index])))   # P3는 1월 1일에 적용 중일 때만
+    first = first[keys + ["adval"]].rename(columns={"adval": "rate_jan"})
     out = out.merge(first, on=keys, how="left")
     return out.drop(columns=["wnum", "wden"])
 
@@ -113,6 +127,7 @@ def build(df: pd.DataFrame) -> pd.DataFrame:
     jan = w.pivot(index=["year", "hs10"], columns="rate_cd", values="rate_jan")
     spec = w.pivot(index=["year", "hs10"], columns="rate_cd", values="specific")
     txt = w.pivot(index=["year", "hs10"], columns="rate_cd", values="txt")
+    days = w.pivot(index=["year", "hs10"], columns="rate_cd", values="days")
     t = pd.DataFrame(index=rate.index)
     for cd in ["A", "C", "F", "L", "P3", "W2", "W1", "E1", "E2", "E3"] + list(FTA):
         t[f"r_{cd}"] = rate.get(cd)
@@ -124,25 +139,35 @@ def build(df: pd.DataFrame) -> pd.DataFrame:
         t[f"has_{cd}"] = rate.get(cd).notna() if cd in rate.columns else False
 
     # ---- 무협정 적용세율(MFN, 제50조) ----
-    base = t.r_A
-    domestic = t.r_P3.where(t.r_P3.notna(), t.r_L.where(t.r_L.notna(), base))
-    regime = np.where(t.r_P3.notna(), "P3", np.where(t.r_L.notna(), "L", "A"))
+    # P3가 적용된 날(with)과 아닌 날(without)을 따로 계산해 일수로 가중한다.
+    yr0 = t.index.get_level_values("year")
+    ndays = pd.Series(np.where(yr0 % 4 == 0, 366, 365), index=t.index)
+    t["p3_share"] = (days["P3"] / ndays).clip(upper=1).fillna(0.0) if "P3" in days.columns else 0.0
     tier2 = t[["r_C", "r_F"]].min(axis=1)
-    use2 = tier2.notna() & (domestic.isna() | (tier2 < domestic))
-    mfn = domestic.where(~use2, tier2)
-    regime = np.where(use2, np.where(t.r_C.notna() & (t.r_C <= t.r_F.fillna(np.inf)), "C", "F"), regime)
-    # 양허 농림축산물(W2): 기본세율에 우선. 할당관세(P3)가 있으면 그것.
-    usew = t.r_W2.notna() & t.r_P3.isna()
-    mfn = mfn.where(~usew, t.r_W2)
-    regime = np.where(usew, "W2", regime)
-    t["mfn"] = mfn
-    t["mfn_regime"] = regime
+    reg2 = np.where(t.r_C.notna() & (t.r_C <= t.r_F.fillna(np.inf)), "C", "F")
+
+    def rule(domestic, regime, allow_w2):
+        use2 = tier2.notna() & (domestic.isna() | (tier2 < domestic))
+        m = domestic.where(~use2, tier2)
+        rg = np.where(use2, reg2, regime)
+        if allow_w2:                                   # 양허 농림축산물(W2): 기본세율에 우선. 할당관세(P3)가 적용 중이면 그것.
+            usew = t.r_W2.notna()
+            m = m.where(~usew, t.r_W2)
+            rg = np.where(usew, "W2", rg)
+        return m, rg
+    m_without, rg_without = rule(t.r_L.where(t.r_L.notna(), t.r_A), np.where(t.r_L.notna(), "L", "A"), True)
+    m_with, rg_with = rule(t.r_P3, np.full(len(t), "P3", dtype=object), False)
+    sh = t.p3_share
+    t["mfn"] = np.where(sh >= 1, m_with, np.where(sh > 0, sh * m_with + (1 - sh) * m_without, m_without))
+    t["mfn"] = t.mfn.where(t.mfn.notna(), m_without)
+    t["mfn_regime"] = np.where(sh >= 0.5, rg_with, rg_without)
     # 1월 1일 기준 MFN(같은 규칙)
     domestic_j = t.j_P3.where(t.j_P3.notna(), t.j_L.where(t.j_L.notna(), t.j_A))
     tier2_j = t[["j_C", "j_F"]].min(axis=1)
     use2_j = tier2_j.notna() & (domestic_j.isna() | (tier2_j < domestic_j))
     mfn_j = domestic_j.where(~use2_j, tier2_j)
-    t["mfn_jan"] = mfn_j.where(~usew, t.j_W2)
+    usew_j = t.r_W2.notna() & t.j_P3.isna()
+    t["mfn_jan"] = mfn_j.where(~usew_j, t.j_W2)
 
     # ---- 협정·APTA 적용세율: 무협정보다 낮을 때만. 발효 해는 발효 전 날을 무협정 세율로 일수 가중 ----
     yr = t.index.get_level_values("year")

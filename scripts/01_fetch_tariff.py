@@ -408,7 +408,8 @@ def verify(code: pd.DataFrame, rt: pd.DataFrame):
         for label, sub in [("코드 있음", code), ("코드 있음(채움 전)", code[code.source == "table"])]:
             have = sub[["year", "hs10"]].drop_duplicates().assign(ok=1)
             m = imp.merge(have, on=["year", "hs10"], how="left")
-            cov = m.assign(ok=m.ok.fillna(0)).groupby("year").apply(lambda g: (g.v * g.ok).sum() / g.v.sum())
+            m = m.assign(w=m.v * m.ok.fillna(0))
+            cov = m.groupby("year").w.sum() / m.groupby("year").v.sum()
             logger.info("  수입액 중 그해 세율표에 %s 몫: %s", label,
                         ", ".join(f"{y} {100 * c:.2f}%" for y, c in cov.items()))
             rows += [(f"수입액 커버리지 {label}", int(y), round(100 * c, 2)) for y, c in cov.items()]
@@ -423,6 +424,8 @@ def load(code, rt, names, meta):
     DuckDB는 CREATE OR REPLACE로 표를 갈아도 파일이 줄지 않아 다시 적재할 때마다 커진다
     (한 번 다시 적재하자 27MB가 53MB가 됐다). 받은 기록(meta_fetch)만 옛 파일에서 옮겨 온다.
     """
+    if code.empty or rt.empty:                       # 캐시 경로(KCSTARIFF_RAW)를 잘못 주면 빈 표가 된다 — 옛 파일을 지키려고 멈춘다
+        raise SystemExit(f"파싱 결과가 비어 있어 적재하지 않는다(캐시 {RAW}를 확인; KCSTARIFF_RAW)")
     tmp = DB_OUT.with_name(DB_OUT.stem + ".tmp.duckdb")
     tmp.unlink(missing_ok=True)
     con = duckdb.connect(str(tmp))

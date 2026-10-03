@@ -231,7 +231,7 @@
       <p><b>무엇인가.</b> 한국에 수입되는 물품은 HSK(한국 품목분류) 10자리 코드로 분류되고, 코드마다 그해에 적용되는 관세율이 정해져 있다. 그런데 한 코드에 세율이 하나가 아니다 — 기본세율이 있고, WTO에 약속한 협정세율이 있고, 정부가 해마다 정하는 조정·할당관세가 있고, 상대국이 어디냐에 따라 FTA 협정세율이 있다. 이 DB는 관세법령정보포털(CLIP)이 연도별로 보여 주는 그 세율 전부를 2007년부터 2026년까지 받아 DuckDB 파일 하나(<code>kcstariff.duckdb</code>, 약 38MB)에 담은 것이다. 세율 화면의 문구는 그대로 보존하고(<code>rate_txt</code>), 그것을 숫자로 읽은 종가세율(물품 가격의 몇 %)과 종량세액(kg당 몇 원)을 옆에 두었다.</p>
       <p><b>왜 만들었나.</b> 세율 자료는 "지금 세율"만 구하기는 쉽다 — 관세청이 공공데이터포털에 「품목번호별 관세율표」 엑셀(<code>15051179</code>)을 올려 둔다. 문제는 과거다. 그 엑셀은 현행판과 직전판 하나뿐이라 "2013년에 이 코드의 세율이 얼마였나"를 답하지 못한다. 관세법령정보포털은 연도를 골라 옛 세율표를 보여 주지만 화면으로만 준다. 검색 조건에 류(HS 앞 2자리)를 주면 그 류의 10단위 코드 전부가 표 한 장에 오므로 코드 하나씩 물을 필요는 없지만, 류 97개를 해마다 돌아야 하고, 기본·탄력·양허 세율을 주는 화면과 FTA 세율을 주는 화면이 따로라 류마다 두 번씩 받아야 한다. 스무 해에 3,544번이다. 게다가 앞 화면은 탄력·양허 세율 칸이 처음에는 비어 있다가 화면이 열린 뒤 따로 채워지는 구조라, 화면을 그대로 저장해 표만 읽으면 기본세율밖에 안 보인다(<a href="#" onclick="showTab('traps');return false">데이터 함정</a> 탭). 이 DB는 그 수집과 정리를 끝내 두어, 어느 코드의 세율이 어느 해에 얼마였고 어떻게 바뀌었는지를 바로 구할 수 있게 한다.</p>
       <p><b>왜 "실행세율"이 따로 있나.</b> 세율이 여럿이면 어느 것이 실제로 적용되는지를 정해야 한다. 관세법 제50조가 그 우선순위를 정하고, FTA 관세특례법 제5조가 협정세율과의 관계를 정한다. 건고추(<code>0904210000</code>)는 2025년에 기본세율 50%, 양허관세 270% 또는 kg당 6,210원, 한-미 FTA 18%가 함께 있는데, 조문을 따르면 적용 세율이 원산지에 따라 갈려서, 가령 협정이 없는 나라에서 온 수입에는 270%가, 미국산에는 18%가 적용된다. 이 DB는 그 판정을 코드×연도마다 해 두었다(<code>fct_applied_rate</code>, 237,990행). 어떤 규칙으로 정했는지는 <a href="#" onclick="showTab('applied');return false">실행세율</a> 탭에, 조문 원문은 저장소의 <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/docs/applied-rate-legal-basis.md" target="_blank" rel="noopener">applied-rate-legal-basis.md</a>에 있다.</p>
-      <p><b>누구를 위한 것인가.</b> 무역통계와 세율을 함께 놓고 보려는 연구자가 주 독자다. 무역통계 DB <a href="https://pilsunchoi.github.io/KCSDB2/" target="_blank" rel="noopener">KCSDB2</a>는 관세율이 없다고 명시하는데, 그 빈자리를 이 DB가 채운다. 두 파일을 함께 열고 연도와 코드로 이어 붙이면 "어떤 수입이 어떤 세율을 만났는가"를 코드 단위로 볼 수 있다. 반대로 이 DB가 답하지 못하는 것도 분명하다. FTA 세율은 특혜를 신청했을 때 적용될 수 있는 세율이지 실제로 낸 세율이 아니고(실제로 신청했는지는 자료에 없다), FTA 일곱 상대 밖의 협정(칠레·호주·RCEP 등)은 들어 있지 않으며, 관세율표 화면은 연중 변경의 기간을 주지 않는다 — 할당관세는 그해에 한 번이라도 지정된 품목이 기간 없이 한 해 전부에 붙어 있다.</p>
+      <p><b>누구를 위한 것인가.</b> 무역통계와 세율을 함께 놓고 보려는 연구자가 주 독자다. 무역통계 DB <a href="https://pilsunchoi.github.io/KCSDB2/" target="_blank" rel="noopener">KCSDB2</a>는 관세율이 없다고 명시하는데, 그 빈자리를 이 DB가 채운다. 두 파일을 함께 열고 연도와 코드로 이어 붙이면 "어떤 수입이 어떤 세율을 만났는가"를 코드 단위로 볼 수 있다. 반대로 이 DB가 답하지 못하는 것도 분명하다. FTA 세율은 특혜를 신청했을 때 적용될 수 있는 세율이지 실제로 낸 세율이 아니고(실제로 신청했는지는 자료에 없다), FTA 일곱 상대 밖의 협정(칠레·호주·RCEP 등)은 들어 있지 않으며, 관세율표 화면은 연중 변경의 기간을 주지 않는다 — 할당관세는 그해에 한 번이라도 지정된 품목이 기간 없이 실려 있어, 전량 할당의 적용 날짜는 할당관세 규정의 판본별 별표로 다시 정했다.</p>
     </div>
 
 <!-- DB_STATUS:START -->
@@ -394,11 +394,11 @@
     <ol class="steps">
       <li>
         <h4>무협정 세율의 바탕 — 할당·조정·기본 (제50조 ②3호)</h4>
-        <p>할당관세 수입전량 <code>P3</code>가 있으면 그것, 아니면 조정관세 <code>L</code>, 아니면 기본세율 <code>A</code>. 할당관세 추천분 <code>P1</code>은 추천서가 있어야 적용되므로 넣지 않고 <code>has_P1</code>로 표시만 한다.</p>
+        <p>할당관세 수입전량 <code>P3</code>가 적용 중이면 그것, 아니면 조정관세 <code>L</code>, 아니면 기본세율 <code>A</code>. <code>P3</code>가 한 해 일부에만 적용되면 적용된 날과 아닌 날의 값을 일수로 가중한다(그 몫은 <code>p3_share</code>). 할당관세 추천분 <code>P1</code>은 추천서가 있어야 적용되므로 넣지 않고 <code>has_P1</code>로 표시만 한다.</p>
       </li>
       <li>
         <h4>WTO·국제협력은 더 낮을 때만 (제50조 ③ 본문)</h4>
-        <p>WTO 협정세율 <code>C</code>와 국제협력관세 <code>F</code>는 1단계의 값보다 낮을 때만 우선한다. 다만 농림축산물 양허관세 미추천 <code>W2</code>(양허관세 규정 별표 1의 나)는 기본세율보다 높아도 우선한다(③ 단서) — 건고추 270%가 기본세율 50%를 이기는 이유다. 단서는 기본·잠정세율에 대해서만 우선이라, 할당관세 <code>P3</code>가 있으면 그것을 따른다(겹침 12행, 카사바·옥수수 할당 0%). 추천분 <code>W1</code>은 표시만 한다(<code>has_W1</code>).</p>
+        <p>WTO 협정세율 <code>C</code>와 국제협력관세 <code>F</code>는 1단계의 값보다 낮을 때만 우선한다. 다만 농림축산물 양허관세 미추천 <code>W2</code>(양허관세 규정 별표 1의 나)는 기본세율보다 높아도 우선한다(③ 단서) — 건고추 270%가 기본세율 50%를 이기는 이유다. 단서는 기본·잠정세율에 대해서만 우선이라, 할당관세 <code>P3</code>가 적용 중인 날은 그것을 따른다(겹침 11행, 카사바 할당 0%와 2024년 감귤류 두 코드의 할당 10%). 추천분 <code>W1</code>은 표시만 한다(<code>has_W1</code>).</p>
       </li>
       <li>
         <h4>조건부 세율은 넣지 않는다 (제50조 ②1호)</h4>
@@ -459,7 +459,8 @@
           <tr><td><code>j_A</code> … <code>j_FCA1</code></td><td>입력(1월 1일)</td><td>같은 구분의 1월 1일 값</td></tr>
           <tr><td><code>spec_A</code>, <code>spec_C</code>, <code>spec_W2</code> / <code>txt_*</code></td><td>입력(종량·문구)</td><td>기본·WTO·양허의 종량세액(원)과 화면 문구. 종량 하한 계산과 사람 확인용</td></tr>
           <tr><td><code>has_I</code>, <code>has_T1</code>, <code>has_T2</code>, <code>has_P1</code>, <code>has_W1</code>, <code>has_D</code>, <code>has_G1</code>, <code>has_G2</code></td><td>조건부 표시</td><td>그해 그 코드에 조건부·추천·개도국 세율이 있는지. 실행세율에는 넣지 않는다</td></tr>
-          <tr><td><code>mfn</code>, <code>mfn_regime</code>, <code>mfn_jan</code></td><td>결과</td><td>무협정 세율(%)과 그것이 어느 규정에서 왔는지(A·C·W2·P3·F·L), 1월 1일 값. 스무 해 합계로 A 162,181 · C 65,755 · W2 5,176 · P3 2,367 · F 1,515 · L 996행</td></tr>
+          <tr><td><code>mfn</code>, <code>mfn_regime</code>, <code>mfn_jan</code></td><td>결과</td><td>무협정 세율(%)과 그것이 어느 규정에서 왔는지(A·C·W2·P3·F·L; 한 해 안에서 바뀌면 더 많은 날의 규정), 1월 1일 값. 스무 해 합계로 A 160,221 · C 68,058 · W2 5,177 · P3 2,085 · F 1,453 · L 996행</td></tr>
+          <tr><td><code>p3_share</code></td><td>결과</td><td>그해 할당관세 수입전량(<code>P3</code>)이 적용된 날의 몫(0~1). 할당관세 규정의 판본별 별표로 정한 적용 구간(<code>data/quota/quota_p3_periods.csv</code>)에서 온다. <code>P3</code>가 걸린 코드×연도 2,365개 가운데 527개가 1보다 작다</td></tr>
           <tr><td><code>applied_cn</code>, <code>applied_eu</code>, <code>applied_us</code>, <code>applied_asean</code>, <code>applied_in</code>, <code>applied_vn</code>, <code>applied_ca</code></td><td>결과</td><td>일곱 상대 원산지의 적용세율(%). 협정세율이 <code>mfn</code>보다 낮으면 협정세율, 아니면 <code>mfn</code>. 협정 발효 전 연도는 <code>mfn</code>, 발효 해는 발효 전 날을 <code>mfn</code>으로 일수 가중한 값</td></tr>
           <tr><td><code>inforce_cn</code> … <code>inforce_ca</code></td><td>결과</td><td>그해 그 협정이 적용된 날의 몫(0~1). 발효 해에만 1보다 작다(한-EU 2011년 0.50, 한-미 2012년 0.80, 한-중·한-베트남 2015년 0.03)</td></tr>
           <tr><td><code>applied_apta</code>, <code>applied_apta_bd</code>, <code>applied_apta_la</code>, <code>applied_la</code></td><td>결과</td><td>아시아·태평양 협정(일반·방글라데시·라오스)과 라오스(아세안과 APTA 중 낮은 쪽)</td></tr>
@@ -491,7 +492,7 @@
     <h3>판단이 필요했던 곳</h3>
     <div class="note">
       <b>조정관세의 순위.</b> 관세법 제69조의 조정관세는 2호(1순위, 협정세율보다도 우선)와 1·3·4호(3순위)로 나뉘는데 자료에는 구분기호 <code>L</code> 하나뿐이라 어느 호인지 알 수 없다. 3순위로 두었다. 고추다진양념(조정 45% 대 WTO 54%)처럼 결과가 같은 경우가 대부분이다.<br>
-      <b>양허 미추천과 할당의 겹침.</b> <code>W2</code>와 <code>P3</code>가 함께 있는 12행은 할당관세를 따랐다. 제50조③ 단서가 기본·잠정세율에 대해서만 우선을 말하기 때문이다.<br>
+      <b>양허 미추천과 할당의 겹침.</b> <code>W2</code>와 <code>P3</code>가 함께 있는 11행은 할당관세가 적용 중인 날에 할당관세를 따랐다. 제50조③ 단서가 기본·잠정세율에 대해서만 우선을 말하기 때문이다.<br>
       <b>「N% 또는 0원」.</b> 113행은 종량 대안이 아니라 하한 없음으로 읽었다.
     </div>
     <div class="tblwrap">
@@ -568,8 +569,8 @@
       <div class="trap">
         <div class="tref">기준 시점 · 연중 변경</div>
         <h4>관세율표 화면의 할당관세는 그해 지정분 전부이고 기간이 없다</h4>
-        <p>할당관세는 연중에도 지정·연장·종료되는데 관세율표 화면은 기간 없이 연도별 한 값만 준다. 처음에는 이 화면이 1월 1일 상태를 보여 준다고 보았으나, 할당관세 규정의 판본별 별표 82판(2007~2026)과 맞대 보니 해마다 이 DB의 할당 <code>P1</code>·<code>P3</code> 품목(HS6)이 그해 어느 날이든 별표에 지정된 품목의 합집합과 2008~2026년 모든 해에서 같았다(별표 원문의 호 오기 하나를 고친 뒤; 2026-10-03 확인). 그래서 <code>mfn</code>은 전량 할당 <code>P3</code>를 지정 전·종료 뒤의 달까지 한 해 전부에 적용한 값이다. 1월 1일에 아직 지정 전이던 <code>P3</code> 코드는 2008년 그해 수입액의 2.1%, 2011년 1.3%, 2016년 1.0%, 2022년 0.8%이고 2013·2014·2017~2019·2021·2026년은 없다. <code>mfn_jan</code>도 이런 코드에서는 1월 1일 값이 아니다. 조정관세 <code>L</code> 등 다른 칸이 같은 방식인지는 확인하지 않았다. 품목 상세 화면으로 확인한 285개 코드에서는 아세안(727행)·WTO(328)·기본세율(270)에도 연중 구간이 둘 이상인 경우가 있었다. 연중 변경이 보이는 것은 주요세율보기의 FTA 열뿐이다(한-EU 7월 1일 인하 등). 화면의 기준일 변수에 연중 날짜를 주어도 응답은 1월 1일과 같다(2026-09-13 확인).</p>
-        <p><b>넓히려면.</b> 할당관세·조정관세는 대통령령(할당관세 규정·조정관세 규정)의 별표로 정해지고 한 해에 여러 번 개정되므로, 국가법령정보센터에서 그 규정의 판본을 시행일 순으로 모아 별표(품목번호·세율·물량·적용 기간)를 합치면 연중 시간표가 나온다. 그러면 <code>tariff_rate</code>의 조정·할당 행에도 FTA 열처럼 <code>valid_from</code>·<code>valid_to</code>가 붙고, 실행세율의 유효 일수 가중평균이 그 구간을 그대로 받는다. 할당관세 규정의 별표는 모두 받아 읽었고(2026-10-03), 판본을 이어 일 단위 시간표를 만들고 10단위에 대응시키는 일이 남았다.</p>
+        <p>할당관세는 연중에도 지정·연장·종료되는데 관세율표 화면은 기간 없이 연도별 한 값만 준다. 처음에는 이 화면이 1월 1일 상태를 보여 준다고 보았으나, 할당관세 규정의 판본별 별표 82판(2007~2026)과 맞대 보니 해마다 이 DB의 할당 <code>P1</code>·<code>P3</code> 품목(HS6)이 그해 어느 날이든 별표에 지정된 품목의 합집합과 2008~2026년 모든 해에서 같았다(별표 원문의 호 오기 하나를 고친 뒤; 2026-10-03 확인). 그대로 쓰면 전량 할당 <code>P3</code>가 지정 전·종료 뒤의 달까지 한 해 전부에 붙는다. 그래서 별표의 판본 시행 기간과 별표 기간을 이어 일 단위 시간표를 만들고 10단위 코드에 대응시켜, <code>P3</code>를 적용된 날에만 쓰도록 실행세율을 다시 계산했다(<code>p3_share</code>; 2026-10-03). 예를 들어 액화천연가스(<code>2711110000</code>)의 할당관세 2%는 2013~2020년 동절기(1~3월·10~12월)에만 적용되었으므로 그 해들의 <code>mfn</code>은 2%가 아니라 약 2.5%다. 바뀐 <code>mfn</code>은 618 코드×연도이고(2008·2009·2011년에 많다), 수입 가중 평균 무협정 세율은 해마다 0~0.1%p 달라진다. 추천이 필요한 할당 <code>P1</code>과 조정관세 <code>L</code>은 여전히 기간 없이 연도별 값이다. 품목 상세 화면으로 확인한 285개 코드에서는 아세안(727행)·WTO(328)·기본세율(270)에도 연중 구간이 둘 이상인 경우가 있었다. 연중 변경이 보이는 것은 주요세율보기의 FTA 열뿐이다(한-EU 7월 1일 인하 등). 화면의 기준일 변수에 연중 날짜를 주어도 응답은 1월 1일과 같다(2026-09-13 확인).</p>
+        <p><b>어떻게 만들었나.</b> 할당관세 규정의 2007~2026년 판본 82개의 별표(HWP, 2011년 두 판은 텍스트)를 국가법령정보센터에서 받아 17,236행으로 읽고, 별표 제목(2009~2010년은 본문 제2·3조)의 적용 기간과 판본 시행 기간을 이어 붙였다. 해마다 별표 시간표의 6단위 품목 집합이 이 DB의 할당 품목 집합과 같다(2007년의 무수암모니아 하나는 2006년 말에 끝난 지정이 포털의 2007년 표에 남은 것). 한계수량이 빈 별표 행(36.5%)은 전량 할당인지 알 수 없어 이 DB의 <code>P1</code>·<code>P3</code> 구분을 따랐다. 스크립트는 <code>research/scripts/30</code>~<code>34</code>, 기록은 실행세율 자료 문서 부록 A2.6. 조정관세 규정에도 같은 방법을 쓸 수 있으나 아직 하지 않았다.</p>
       </div>
       <div class="trap">
         <div class="tref">선택 세율 · 종량 하한</div>
@@ -615,7 +616,7 @@
     <p class="sub lead">DB를 받아 로컬에서 분석하려는 연구자에게 필요한 것을 안내한다.</p>
 
     <p><b>먼저 알아둘 것 — 받을 것이 둘로 나뉜다.</b> 하나는 스크립트·문서가 담긴 GitHub 저장소이고, 다른 하나는 DB 파일 자체(<code>kcstariff.duckdb</code>, 약 38MB)다. DB 파일은 저장소에 넣지 않고 Releases에 첨부한다. 세율만 볼 것이면 DB 파일 하나로 충분하고, 무역통계와 함께 보려면 KCSDB2의 DB 파일도 받는다.</p>
-    <p><span class="ver"><!-- DB_VERSION:START -->내려받기 v1.1-2026 · 2026-10-03 게시(협정 적용 시작일 반영, <code>inforce_*</code>·<code>from_date</code> 열 추가; 앞 판 v1.0-2026은 2026-09-13) · 세율표 2007~2026<!-- DB_VERSION:END --></span></p>
+    <p><span class="ver"><!-- DB_VERSION:START -->내려받기 v1.2-2026 · 2026-10-03 게시(할당관세 수입전량의 적용 날짜 반영, <code>p3_share</code> 열 추가; 앞 판 v1.1-2026은 같은 날 협정 적용 시작일 반영, v1.0-2026은 2026-09-13) · 세율표 2007~2026<!-- DB_VERSION:END --></span></p>
 
     <ol class="steps">
       <li>
@@ -625,7 +626,7 @@
       </li>
       <li>
         <h4>DB 파일 받기</h4>
-        <p><a href="https://github.com/pilsunchoi/KCSTARIFF/releases" target="_blank" rel="noopener">Releases 페이지</a>에서 <code>kcstariff.duckdb</code>를 받는다(<a href="https://github.com/pilsunchoi/KCSTARIFF/releases/download/v1.1-2026/kcstariff.duckdb">v1.1-2026 직접 내려받기</a>, 38MB). 압축하지 않고 올리므로 그대로 쓴다. 저장소를 함께 받았으면 <code>data/processed/</code>에 놓는다 — 스크립트가 그 자리를 읽는다.</p>
+        <p><a href="https://github.com/pilsunchoi/KCSTARIFF/releases" target="_blank" rel="noopener">Releases 페이지</a>에서 <code>kcstariff.duckdb</code>를 받는다(<a href="https://github.com/pilsunchoi/KCSTARIFF/releases/download/v1.2-2026/kcstariff.duckdb">v1.2-2026 직접 내려받기</a>, 38MB). 압축하지 않고 올리므로 그대로 쓴다. 저장소를 함께 받았으면 <code>data/processed/</code>에 놓는다 — 스크립트가 그 자리를 읽는다.</p>
         <pre><code>git clone https://github.com/pilsunchoi/KCSTARIFF.git   # 스크립트·문서가 필요할 때만</code></pre>
       </li>
       <li>
@@ -660,7 +661,7 @@ WHERE f.hs10 = '0904210000' AND f.stat_cd = 'CN' AND f.yyyymm >= 202401""").show
 
     <div class="note warn">
       <b>단위.</b> 세율은 %(<code>adval</code>, <code>mfn</code>, <code>applied_*</code>), 종량세는 원(<code>specific</code>, 대부분 kg당), 종량 하한은 원/kg. 무역통계와 맞대려면 과세환율이 필요한데 이 DB에는 없다.<br>
-      <b>기준 시점.</b> 한 해에 한 세율표이고(할당관세는 그해 지정분 전부가 한 해 전체에 붙는다 — 데이터 함정 탭) <code>mfn</code>·<code>applied_*</code>는 연중 변경의 유효 일수 가중평균이다. 월 단위로 보려면 <code>tariff_rate</code>의 <code>valid_from</code>·<code>valid_to</code>를 쓴다. 다만 이 구간은 포털 그대로라 발효 해의 협정세율이 1월 1일부터 잡혀 있으므로, <code>dim_origin_regime.from_date</code> 전의 달은 무협정 세율로 바꿔야 한다. 1월 1일 값은 <code>mfn_jan</code>·<code>j_*</code>.<br>
+      <b>기준 시점.</b> 한 해에 한 세율표이고 <code>mfn</code>·<code>applied_*</code>는 연중 변경의 유효 일수 가중평균이다(할당관세 수입전량은 별표로 정한 적용 날짜를 따른다 — <code>p3_share</code>, 데이터 함정 탭). <code>tariff_rate</code>의 <code>P1</code>·<code>P3</code> 행은 포털 그대로라 기간이 한 해 전부다. 월 단위로 보려면 <code>tariff_rate</code>의 <code>valid_from</code>·<code>valid_to</code>를 쓴다. 다만 이 구간은 포털 그대로라 발효 해의 협정세율이 1월 1일부터 잡혀 있으므로, <code>dim_origin_regime.from_date</code> 전의 달은 무협정 세율로 바꿔야 한다. 1월 1일 값은 <code>mfn_jan</code>·<code>j_*</code>.<br>
       <b>걸러 낼 것.</b> <code>rate_undetermined</code>가 참인 527행은 세율로 읽지 않는다. 덤핑방지·특별긴급이 있는 코드(<code>has_I</code>·<code>has_T1</code>·<code>has_T2</code>)는 특정 원산지 수입이 더 높은 세율을 냈을 수 있다.<br>
       <b>협정 발효 전.</b> 한-EU는 2011년 7월 1일, 한-미는 2012년 3월 15일, 한-캐나다는 2015년 1월 1일, 한-중·한-베트남은 2015년 12월 20일부터다. 그 전 연도의 <code>applied_eu</code> 등은 <code>mfn</code>과 같고, 발효 해는 발효 전 날을 <code>mfn</code>으로 일수 가중한 값이다(그 몫은 <code>inforce_*</code>). 일곱 상대 밖의 협정 상대는 이 DB가 다루지 않는다.<br>
       <b>코드 개정.</b> HS 개정(2012·2017·2022)과 국내 개정(2025·2026)으로 코드가 바뀐다. 개정을 건너는 시계열은 KCSDB2의 연계표(<code>dim_hs10_to_2022</code> 등)로 잇는다.
@@ -770,7 +771,7 @@ python scripts/02_build_applied_rate.py --load   # 실행세율 파생표를 만
 
 <footer>
   <div class="wrap">
-    <p><span class="ver"><!-- DB_VERSION_FOOT:START -->v1.1-2026 · 2026-10-03 게시 · 세율표 2007~2026 (수집 2026-09-11)<!-- DB_VERSION_FOOT:END --></span></p>
+    <p><span class="ver"><!-- DB_VERSION_FOOT:START -->v1.2-2026 · 2026-10-03 게시 · 세율표 2007~2026 (수집 2026-09-11)<!-- DB_VERSION_FOOT:END --></span></p>
     <p><b>출처.</b> 관세청 관세법령정보포털의 관세율표·주요세율보기 화면 자료를 이용했다. 같은 자료의 공공데이터포털 공개본(<a href="https://www.data.go.kr/data/15051179/fileData.do" target="_blank" rel="noopener">15051179</a>)은 <b>공공누리 제1유형</b>(출처표시)이다. 자료별 출처와 받는 방법은 <a href="#" onclick="showTab('use');return false">받기·사용</a> 탭의 「어디서 받았나」에 있다. 관세청이 이 DB를 후원하거나 특수 관계에 있지 않다. 실행세율은 이 저장소가 조문을 해석해 만든 파생값이다. 이 저장소의 코드와 문서는 <a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/LICENSE" target="_blank" rel="noopener">MIT 라이선스</a>를 따르며, 원자료는 그 대상이 아니다(<a href="https://github.com/pilsunchoi/KCSTARIFF/blob/main/NOTICE.md" target="_blank" rel="noopener">NOTICE</a>).</p>
     <p><b>고지.</b> 관세법령정보포털은 10단위 세율이 참고용이며 법적 효력이 없다고 밝힌다. 세액 계산이나 수입신고에는 관세법 별표와 해당 규정의 원문을 확인할 것. 무역통계 DB <a href="https://pilsunchoi.github.io/KCSDB2/" target="_blank" rel="noopener">KCSDB2</a>와 같은 체계로 만들었고 연도·HS10으로 조인된다. 이 DB를 코드별로 보여 주는 화면은 <a href="https://pilsunchoi.github.io/KoreaTariffAtlas/" target="_blank" rel="noopener">한국 관세 아틀라스</a>다.</p>
   </div>

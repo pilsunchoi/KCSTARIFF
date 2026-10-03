@@ -10,7 +10,8 @@
 해마다 별표 구간의 소호(한 자리 소호면 호+그 자리)로 그해 세율 DB의 P1·P3 코드를 후보로 모으고, 그 소호 안의 별표 품목
 (품명 경로·규격이 같은 구간의 묶음)이 하나면 후보 전부를 그 품목에 붙인다(single). 품목이 여럿이면 코드마다 품목을 점수로
 고른다(scored): 세율이 세율 DB의 그해 할당 세율과 같으면 1, 그리고 코드 품명(말단)과 품명 경로의 각 단계·규격 사이 문자열
-유사도의 최댓값(0~1). 최고점이 같은 품목이 여럿이면 모두 붙이고 tie로 둔다. 어느 코드에도 붙지 않은 품목은 그 소호에서 점수가 가장 높은 코드에
+유사도의 최댓값(0~1). 최고점이 같은 품목이 여럿이면 모두 붙이고 tie로 둔다. 세율 DB에서 P1·P3가 둘 다인 코드는 P1 세율과 P3 세율로
+따로 골라 둘 다 붙인다(원유의 나프타 제조용·그 밖). 어느 코드에도 붙지 않은 품목은 그 소호에서 점수가 가장 높은 코드에
 붙인다(item_best; 한 코드 안에 별표 품목이 여럿인 경우). 같은 코드에 날짜가 겹치고 세율이 다른 구간은 conflict로 표시한다. 구간은 연도 경계에서 자른다(코드가 해마다 바뀐다).
 P1·P3 구분은 별표의 한계수량이 아니라 세율 DB에서 가져온다 — 한계수량이 빈 행이 P1·P3 어느 쪽도 될 수 있다(기록 9절).
 """
@@ -56,7 +57,8 @@ def main() -> None:
     s["prefix"] = s.hs4 + s["sub"]
     con = duckdb.connect(str(DB), read_only=True)
     db = con.execute("""select r.year, r.hs10, string_agg(distinct r.rate_cd, ',' order by r.rate_cd) rate_cd,
-                               min(r.adval) db_adval, any_value(c.name_ko) name_ko
+                               min(r.adval) db_adval, min(r.adval) filter (where r.rate_cd='P1') p1_adval,
+                               min(r.adval) filter (where r.rate_cd='P3') p3_adval, any_value(c.name_ko) name_ko
                         from tariff_rate r left join tariff_code c using (year, hs10)
                         where r.rate_cd in ('P1','P3') group by 1, 2""").df()
     out, summ = [], []
@@ -75,13 +77,18 @@ def main() -> None:
                 if items.ngroups == 1:
                     pick, method, score = [g.item.iloc[0]], "single", None
                 else:
-                    sc = {}
-                    for it, gi in items:
-                        r_ok = c.db_adval == c.db_adval and any(abs(x - c.db_adval) < 1e-9 for rt in gi.rate for x in nums(rt))
-                        sc[it] = (1.0 if r_ok else 0.0) + sim(c.name_ko or "", gi.name_path.iloc[-1], gi.spec.iloc[-1])
-                    top = max(sc.values())
-                    pick = [it for it, v in sc.items() if abs(v - top) < 1e-9]
-                    method, score = ("tie" if len(pick) > 1 else "scored"), round(top, 3)
+                    # P1·P3가 둘 다인 코드는 구분마다(그 세율로) 따로 고른다 — 원유: 나프타 제조용(물량, P1)과 그 밖(수입전량, P3)
+                    targets = [x for x in (c.p1_adval, c.p3_adval) if x == x] or [c.db_adval]
+                    pick, top = [], 0.0
+                    for tgt in dict.fromkeys(targets):
+                        sc = {}
+                        for it, gi in items:
+                            r_ok = tgt == tgt and any(abs(x - tgt) < 1e-9 for rt in gi.rate for x in nums(rt))
+                            sc[it] = (1.0 if r_ok else 0.0) + sim(c.name_ko or "", gi.name_path.iloc[-1], gi.spec.iloc[-1])
+                        t_ = max(sc.values())
+                        pick += [it for it, v in sc.items() if abs(v - t_) < 1e-9 and it not in pick]
+                        top = max(top, t_)
+                    method, score = ("tie" if len(pick) > len(dict.fromkeys(targets)) else "scored"), round(top, 3)
                 n_single += method == "single"; n_scored += method == "scored"; n_tie += method == "tie"
                 for it in pick:
                     used_items.add(it)
