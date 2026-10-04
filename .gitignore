@@ -24,4 +24,5 @@ research/common/
 # 공개 전 연구. 공개할 때 해당 줄만 지운다(복사하지 않는다)
 research/rate-gap-code-pairs/
 research/tariff-cut-incidence/
-research/quota-tariff-incidence/
+research/quota-tariff-operations/
+research/applied-rate-structure/
